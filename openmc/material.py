@@ -13,6 +13,9 @@ import openmc.checkvalue as cv
 from openmc._xml import clean_indentation
 from .mixin import IDManagerMixin
 
+# cvmt FETs 
+from openmc.zernike import * 
+
 
 # Units for density supported by OpenMC
 DENSITY_UNITS = ['g/cm3', 'g/cc', 'kg/m3', 'atom/b-cm', 'atom/cm3', 'sum',
@@ -385,8 +388,9 @@ class Material(IDManagerMixin):
                       'version of openmc')
 
         self._convert_to_distrib_comps = True
-
-    def add_nuclide(self, nuclide, percent, percent_type='ao'):
+    
+    # cvmt 
+    def add_nuclide(self, nuclide, percent, percent_type='ao', poly=None ):
         """Add a nuclide to the material
 
         Parameters
@@ -397,6 +401,8 @@ class Material(IDManagerMixin):
             Atom or weight percent
         percent_type : {'ao', 'wo'}
             'ao' for atom percent and 'wo' for weight percent
+        poly: {'poly_type', 'fet_order', 'fet_norm', 'enable'}
+            FETs in number density 
 
         """
         cv.check_type('nuclide', nuclide, str)
@@ -418,7 +424,25 @@ class Material(IDManagerMixin):
             if Z >= 89:
                 self.depletable = True
 
-        self._nuclides.append((nuclide, percent, percent_type))
+        # cvmt 
+        # self._nuclides.append((nuclide, percent, percent_type))
+        # FETs 
+        if poly is not None:
+            if poly['enable'] == True:
+                order  = poly['fet_order']
+                n      = num_poly(order)
+                coeffs = np.zeros(n)
+                poly_coeffs = np.zeros(n+1)
+                radius = poly['fet_norm'] 
+                zp     = ZernikePolynomial(order, coeffs, radial_norm=radius, sqrt_normed=False)
+                poly_coeffs[0]  = radius
+                poly_coeffs[1:] = zp.coeffs # zp._p_coeffs[:]
+                poly_type       = poly['poly_type']
+                self._nuclides.append((nuclide, percent, percent_type, poly_coeffs, poly_type))
+            else:
+                self._nuclides.append((nuclide, percent, percent_type))
+        else:
+            self._nuclides.append((nuclide, percent, percent_type))
 
     def remove_nuclide(self, nuclide):
         """Remove a nuclide from the material
