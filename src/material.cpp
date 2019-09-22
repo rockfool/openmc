@@ -1515,7 +1515,7 @@ PolyProperty::evaluate_zernike1d(Position r) {
   rho = std::sqrt(r.x * r.x + r.y * r.y) / coeffs_[0];
   c_index = 2;
   for( i=0; i <= order_; i=i+2){
-      calc_zn_rad(i, rho,  poly_val);
+      calc_zn_rad(i, rho,  &poly_val);
       property += poly_val * coeffs_[c_index-1];
       c_index = c_index + 1;
   }
