@@ -39,8 +39,8 @@ struct PolyProperty{
   int n_coeffs_;                           //! number of coeffs
   int order_;                              //! the order of the expansion
   int geom_norm_offset_;                   //! offset for the geom_norms coeffs
-  double poly_results_[100];               //! variables used in evaluation property
-  double poly_norm_[100];                  //! polynomial norm available to property for efficiency
+  double poly_results_[100] {1.0};         //! variables used in evaluation property
+  double poly_norm_[100] {1.0};            //! polynomial norm available to property for efficiency
   double evaluate(Position r);             //! Evaluate function
   double evaluate_zernike1d(Position r);
   double evaluate_zernike(Position r); 

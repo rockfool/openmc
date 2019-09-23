@@ -887,5 +887,93 @@ std::complex<double> w_derivative(std::complex<double> z, int order)
   }
 }
 
+void calc_zn_old(int n, double rho, double phi, double sqrt_norm[], double zn[]){
+  //! This efficient method for calculation R(m,n) is taken from 
+  //! Chong, C. W., Raveendran, P., & Mukundan, R. (2003). A comparative
+  //! analysis of algorithms for fast computation of Zernike moments.
+  //! Pattern Recognition, 36(3), 731-742.
+  //! 
+  //! n           ! Maximum order
+  //! rho         ! Radial location in the unit disk
+  //! phi         ! Theta (radians) location in the unit disk
+  //! sqrt_norm(:)! Sqrt normalization for each order n
+  //! zn(:)       ! The resulting list of coefficients
+  double sin_phi, cos_phi;                //! Sine and Cosine of phi
+  std::vector<double> sin_phi_vec;        //! Contains sin(n*phi)
+  std::vector<double> cos_phi_vec;        //! Contains cos(n*phi)
+  std::vector<std::vector<double>> zn_mat;//! Matrix form of the coefficients which is
+                                          //! easier to work with
+  int i,p,q;                              //! Loop counters
+  double k1, k2, k3, k4;                  //! Variables for R_m_n calculation
+  //
+  //! n == radial degree
+  //! m == azimuthal frequency
+  sin_phi_vec.resize(n+1);
+  cos_phi_vec.resize(n+1);
+  zn_mat.resize(n+1);
+  for(i=0; i<=n+1;i++){ 
+    zn_mat[i].resize(n+1);
+  }
+  //! Deterine vector of sin(n*phi) and cos(n*phi)
+  sin_phi = std::sin(phi);
+  cos_phi = std::cos(phi);
+  
+  sin_phi_vec[1-1] = 1.0;
+  cos_phi_vec[1-1] = 1.0;
+  
+  sin_phi_vec[2-1] = 2.0 * cos_phi;
+  cos_phi_vec[2-1] = cos_phi;
+  
+  for( i=3; i<=n+1; i++){
+    sin_phi_vec[i-1] = 2.0 * cos_phi * sin_phi_vec[i-1-1] - sin_phi_vec[i-2-1];
+    cos_phi_vec[i-1] = 2.0 * cos_phi * cos_phi_vec[i-1-1] - cos_phi_vec[i-2-1];
+  }
+  
+  for( i=1; i<=n+1;i++){
+    sin_phi_vec[i-1] = sin_phi_vec[i-1] * sin_phi;
+  }
+  
+  //! Calculate R_m_n(rho)
+  //! Fill the main diagonal first
+  for( p=0; p<=n; p++){
+    zn_mat[p+1-1][p+1-1] = std::pow(rho,p);
+  }
+  //! Fill in the second diagonal
+  for( q=0; q<=n-2; q++){
+     zn_mat[q+2+1-1][q+1-1] = (q+2) * zn_mat[q+2+1-1][q+2+1-1] - (q+1) * zn_mat[q+1-1][q+1-1];
+  }
+  //! Fill in the rest of the values using the original results
+  for( p=4; p<=n; p++){
+     k2 = 2 * p * (p - 1) * (p - 2);
+     for( q=p-4; q>=0; q=q-2){
+        k1 = (p + q) * (p - q) * (p - 2) / 2;
+        k3 = -pow(q,2)*(p - 1) - p * (p - 1) * (p - 2);
+        k4 = -p * (p + q - 2) * (p - q - 2) / 2;
+        zn_mat[p+1-1][q+1-1] = ((k2 * rho * rho + k3) * zn_mat[p-2+1-1][q+1-1] 
+                               + k4 * zn_mat[p-4+1-1][q+1-1]) / k1;
+     }
+  }
+  //
+  //! Roll into a single vector for easier computation later
+  //! The vector is ordered (0,0), (1,-1), (1,1), (2,-2), (2,0),
+  //! (2, 2), ....   in (n,m) indices
+  //! Note that the cos and sin vectors are offest by one
+  //! sin_phi_vec = [sin(x), sin(2x), sin(3x) ...]
+  //! cos_phi_vec = [1.0, cos(x), cos(2x)... ]
+  i = 1;
+  for( p=0; p<=n; p++){
+    for( q=-p; q<=p; q=q+2){
+      if (q < 0) {
+         zn[i-1] = zn_mat[p+1-1][abs(q)+1-1] * sin_phi_vec[p-1] * sqrt_norm[i-1];
+      } else if ( q == 0) {
+         zn[i-1] = zn_mat[p+1-1][q+1-1] * sqrt_norm[i-1];
+      } else {
+         zn[i-1] = zn_mat[p+1-1][q+1-1] * cos_phi_vec[p+1-1] * sqrt_norm[i-1];
+      }
+      i = i + 1;
+     }
+  }
+
+}
 
 } // namespace openmc

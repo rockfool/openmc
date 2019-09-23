@@ -1531,8 +1531,18 @@ PolyProperty::evaluate_zernike(Position r) {
   //! Get normalized positions
   rho = sqrt(  r.x *  r.x + r.y * r.y) / coeffs_[0];
   phi = std::atan2(r.y,r.x);
+  
+  //calc_zn(order_, rho, phi, poly_results_);
+  calc_zn_old(order_, rho, phi, poly_norm_, poly_results_);
+  //normalize
+  k=1;
+  for(i=0; i<=order_; i++){
+    for(j=-i; j<=i; j=j+2){
+      poly_results_[k-1] *= poly_norm_[k-1];
+    }
+    k+=1;
+  }
   k = 2; //! Keeps tracking of index in this % coeffs
-  calc_zn(order_, rho, phi, poly_results_);
   for( i=0; i<=order_; i++){
     for( j=1; j<=i+1; j++){
       property += poly_results_[k-1-1] * coeffs_[k-1];
