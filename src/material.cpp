@@ -1529,30 +1529,18 @@ PolyProperty::evaluate_zernike(Position r) {
   double phi;
   double property {0.0}; 
   //! Get normalized positions
-  rho = sqrt(  r.x *  r.x + r.y * r.y) / coeffs_[0];
-  phi = std::atan2(r.y,r.x);
-  
-  //calc_zn(order_, rho, phi, poly_results_);
-  calc_zn_old(order_, rho, phi, poly_norm_, poly_results_);
-  //normalize
-  k=1;
-  for(i=0; i<=order_; i++){
-    for(j=-i; j<=i; j=j+2){
-      poly_results_[k-1] *= poly_norm_[k-1];
-    }
-    k+=1;
-  }
-  k = 2; //! Keeps tracking of index in this % coeffs
+  rho = std::sqrt(r.x * r.x + r.y * r.y)/coeffs_[0];
+  phi = std::atan2(r.y, r.x);
+  calc_zn(order_, rho, phi, poly_results_);
+  //! Keeps tracking of index in coeffs_
+  k = 2; 
   for( i=0; i<=order_; i++){
     for( j=1; j<=i+1; j++){
       property += poly_results_[k-1-1] * coeffs_[k-1];
-      //printf("this -> poly_results_= %15.7f\n", this -> poly_results_[k-1-1]);
-      //printf("this -> coeffs_= %15.7f\n", this -> coeffs_[k-1];
-      k = k + 1;
+      k += 1;
     }
   }
   if (property < -1.0E-8) {
-     //write(*,*) 'Property = ', property
      fatal_error("A negative number density below -1E-8 was calculated\n");
   } else if (property < 0.0) {
      printf("Warning: A negative number density between -1E-8 and 0 was calculated\n");

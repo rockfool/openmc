@@ -430,13 +430,20 @@ class Material(IDManagerMixin):
         if poly is not None:
             if poly['enable'] == True:
                 order  = poly['fet_order']
-                n      = num_poly(order)
-                coeffs = np.zeros(n)
-                poly_coeffs = np.zeros(n+1)
                 radius = poly['fet_norm'] 
-                zp     = ZernikePolynomial(order, coeffs, radial_norm=radius, sqrt_normed=False)
+                if(poly['poly_type']=='zernike'):
+                    n      = num_poly(order)
+                    coeffs = np.zeros(n)
+                    poly_coeffs = np.zeros(n+1)
+                    zp = ZernikePolynomial(order, coeffs, radial_norm=radius, sqrt_normed=False)
+                elif(poly['poly_type']=='zernike1d'):
+                    n      = num_poly1d(order)
+                    coeffs = np.zeros(n)
+                    poly_coeffs = np.zeros(n+1)
+                    zp = Zernike1DPolynomial(order, coeffs, radial_norm=radius)               
+                #  
                 poly_coeffs[0]  = radius
-                poly_coeffs[1:] = zp.coeffs # zp._p_coeffs[:]
+                poly_coeffs[1:] = zp.coeffs 
                 poly_type       = poly['poly_type']
                 self._nuclides.append((nuclide, percent, percent_type, poly_coeffs, poly_type))
             else:
@@ -647,8 +654,9 @@ class Material(IDManagerMixin):
         """
 
         nuclides = OrderedDict()
-
-        for nuclide, density, density_type in self._nuclides:
+        
+        #cvmt 
+        for nuclide, density, density_type, *_ in self._nuclides:
             nuclides[nuclide] = (nuclide, density, density_type)
 
         return nuclides
@@ -822,6 +830,11 @@ class Material(IDManagerMixin):
                 xml_element.set("ao", str(nuclide[1]))
             else:
                 xml_element.set("wo", str(nuclide[1]))
+            #cvmt 
+            if len(nuclide) > 3:
+                xml_element.set("poly_coeffs", ' '.join([str(c) for c in nuclide[3]])) 
+                xml_element.set("poly_type", nuclide[4])                
+            
 
         return xml_element
 

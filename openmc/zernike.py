@@ -9,31 +9,44 @@ import numpy as np
 import copy
 from scipy.optimize import minimize
 from openmc.zernike_data import b_matrix, c_matrix
+from collections import OrderedDict
+
+def zernike_dict(flat_dict, order, radius):
+    z_dict = OrderedDict()
+    for key in flat_dict:
+        z_dict[key] = flat_zernike(flat_dict[key], order, radius)
+    return z_dict
+
+def zernike1d_dict(flat_dict, order, radius):
+    z1d_dict = OrderedDict()
+    for key in flat_dict:
+        z1d_dict[key] = flat_zernike1d(flat_dict[key], order, radius)
+    return z1d_dict
 
 def num_poly(n):
     return int(1/2 * (n+1) * (n+2))
+
+def num_poly1d(n):
+    return int(1/2 * n + 1)
 
 def zern_to_ind(n,m):
     ind = num_poly(n-1)
     ind += (m + n) // 2
     return int(ind)
 
-def form_b_matrix(p, pp, rate):
-    # Yields the sum
-    # ret = sum_r Int[P_p * P_pp * P_r * rate_r] / Int[P_pp^2]
-
-    order = len(rate)
-
-    v1 = b_matrix[p,pp,0:order]
-    return np.dot(v1, rate)/c_matrix[pp]
-
-def flat_to_zern(val, order, radius):
-    # Get number of unknowns
+def flat_zernike(val, order, radius):
+    # initialize zernike polynomial 
     n = num_poly(order)
     coeffs = np.zeros(n)
     coeffs[0] = val
-
     return ZernikePolynomial(order, coeffs, radial_norm=radius, sqrt_normed=False)
+
+def flat_zernike1d(val, order, radius):
+    # initialize zernike1d polynomial 
+    n = num_poly1d(order)
+    coeffs = np.zeros(n)
+    coeffs[0] = val
+    return Zernike1DPolynomial(order, coeffs, radial_norm=radius)
 
 class ZernikePolynomial:
     ''' ZernikePolynomial class
@@ -45,13 +58,13 @@ class ZernikePolynomial:
     ----------
     order : int
         The maximum order of the polynomial
-    radial_norm : flaot
+    radial_norm : float
         The radial normalization factor
     name : str
         The name of the polynomial
     n_coeffs : int
         The number of coefficients for a given order
-    coeffs : List[flaot]
+    coeffs : List[float]
         The coefficients of the polynomial ordered as (m,n) 
         (0,0) (-1,1) (1,1) (-2,2) (0,2) (2,2) ...
     p_coeffs : List[float]
@@ -727,3 +740,102 @@ class ZernikePolynomial:
             self.coeffs[1::] = self.coeffs[1::] * scaling
 
         
+
+class Zernike1DPolynomial:
+    ''' Zernike1DPolynomial class
+    
+    This class contains the data that fully describes a radial Zernike polynomial
+    and supporting functions.
+
+    Attributes
+    ----------
+    order : int
+        The even order of the polynomial
+    radial_norm : float
+        The radial normalization factor
+    name : str
+        The name of the polynomial
+    n_coeffs : int
+        The number of coefficients for a given order
+    coeffs : List[float]
+        The coefficients of the polynomial ordered as (0,n) 
+        (0,0) (0,2) (0,4) ...
+    '''
+    def __init__(self, order, coeffs, radial_norm=1.0):
+        self._order = order
+        self._radial_norm = radial_norm
+        self._name = 'zernike1d'
+        self._coeffs = coeffs
+        self._n_coeffs = int(1/2 * order + 1)
+
+    def __mul__(self, old):
+        new = copy.deepcopy(self)
+        new.coeffs *= old
+        return new
+
+    def __rmul__(self, old):
+        new = copy.deepcopy(self)
+        new.coeffs *= old
+        return new
+
+    def __div__(self, old):
+        new = copy.deepcopy(self)
+        new.coeffs /= old
+        return new
+    
+    def __truediv__(self, old):
+        new = copy.deepcopy(self)
+        new.coeffs /= old
+        return new
+        
+    @property
+    def order(self):
+        return self._order
+
+    @property
+    def radial_norm(self):
+        return self._radial_norm
+    
+    @property
+    def coeffs(self):
+        return self._coeffs
+
+    @property
+    def n_coeffs(self):
+        return self._n_coeffs
+    
+    @property
+    def name(self):
+        return self._name
+
+    @order.setter
+    def order(self, order):
+        self._order = order
+
+    @coeffs.setter
+    def coeffs(self, coeffs):
+        self._coeffs = coeffs
+
+    @n_coeffs.setter
+    def n_coeffs(self, n_coeffs):
+        self._n_coeffs = n_coeffs
+            
+    @radial_norm.setter
+    def radial_norm(self, radial_norm):
+        self._radial_norm = radial_norm
+        
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
