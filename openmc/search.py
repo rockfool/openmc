@@ -6,9 +6,9 @@ import scipy.optimize as sopt
 import openmc
 import openmc.model
 import openmc.checkvalue as cv
+import openmc.stochastic_approximation as sa
 
-
-_SCALAR_BRACKETED_METHODS = ['brentq', 'brenth', 'ridder', 'bisect']
+_SCALAR_BRACKETED_METHODS = ['brentq', 'brenth', 'ridder', 'bisect', 'stochastic']
 
 
 def _search_keff(guess, target, model_builder, model_args, print_iterations,
@@ -169,6 +169,8 @@ def search_for_keff(model_builder, initial_guess=None, target=1.0,
             root_finder = sopt.ridder
         elif bracketed_method == 'bisect':
             root_finder = sopt.bisect
+        elif bracketed_method == 'stochastic':
+            root_finder = sa.stochastic_approximation
 
     elif initial_guess is not None:
 
