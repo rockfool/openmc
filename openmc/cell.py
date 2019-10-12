@@ -456,7 +456,20 @@ class Cell(IDManagerMixin):
 
         return memo[self]
 
-    def create_xml_subelement(self, xml_element):
+    def create_xml_subelement(self, xml_element, memo=None):
+        """Add the cell's xml representation to an incoming xml element
+        Parameters
+        ----------
+        xml_element : xml.etree.ElementTree.Element
+            XML element to be added to
+        memo : dict or None
+            A dictionary containing sets of universe, lattice, cell, and surface
+            id sets already written to the xml_element. This parameter
+            is used internally and should not be specified by the user.
+        Returns
+        -------
+        None
+        """
         element = ET.Element("cell")
         element.set("id", str(self.id))
 
@@ -475,7 +488,7 @@ class Cell(IDManagerMixin):
 
         elif self.fill_type in ('universe', 'lattice'):
             element.set("fill", str(self.fill.id))
-            self.fill.create_xml_subelement(xml_element)
+            self.fill.create_xml_subelement(xml_element, memo)
 
         if self.region is not None:
             # Set the region attribute with the region specification
@@ -491,19 +504,21 @@ class Cell(IDManagerMixin):
             # tree. When it reaches a leaf (a Halfspace), it creates a <surface>
             # element for the corresponding surface if none has been created
             # thus far.
-            def create_surface_elements(node, element):
+            def create_surface_elements(node, element, memo=None):
                 if isinstance(node, Halfspace):
-                    path = "./surface[@id='{}']".format(node.surface.id)
-                    if xml_element.find(path) is None:
-                        xml_element.append(node.surface.to_xml_element())
+                    if memo and id(node.surface) in memo:
+                        return
+                    if memo is not None:
+                        memo.add(id(node.surface))
+                    xml_element.append(node.surface.to_xml_element())
                 elif isinstance(node, Complement):
-                    create_surface_elements(node.node, element)
+                    create_surface_elements(node.node, element, memo)
                 else:
                     for subnode in node:
-                        create_surface_elements(subnode, element)
+                        create_surface_elements(subnode, element, memo)
 
             # Call the recursive function from the top node
-            create_surface_elements(self.region, xml_element)
+            create_surface_elements(self.region, xml_element, memo)
 
         if self.temperature is not None:
             if isinstance(self.temperature, Iterable):

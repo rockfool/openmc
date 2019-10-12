@@ -86,9 +86,11 @@ class Geometry(object):
             Path to file to write. Defaults to 'geometry.xml'.
 
         """
+        memo = set()
+        
         # Create XML representation
         root_element = ET.Element("geometry")
-        self.root_universe.create_xml_subelement(root_element)
+        self.root_universe.create_xml_subelement(root_element, memo)
 
         # Sort the elements in the file
         root_element[:] = sorted(root_element, key=lambda x: (

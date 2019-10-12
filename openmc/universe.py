@@ -512,19 +512,33 @@ class Universe(IDManagerMixin):
 
         return memo[self]
 
-    def create_xml_subelement(self, xml_element):
+    def create_xml_subelement(self, xml_element, memo=None):
+        """Add the universe xml representation to an incoming xml element
+        Parameters
+        ----------
+        xml_element : xml.etree.ElementTree.Element
+            XML element to be added to
+        memo : dict or None
+            A dictionary containing sets of universe, lattice, cell, and surface
+            id sets already written to the xml_element. This parameter
+            is used internally and should not be specified by the user.
+        Returns
+        -------
+        None
+        """
         # Iterate over all Cells
         for cell_id, cell in self._cells.items():
-            path = "./cell[@id='{}']".format(cell_id)
+            if memo and id(cell) in memo:
+                continue
+            if memo is not None:
+                memo.add(id(cell))
 
-            # If the cell was not already written, write it
-            if xml_element.find(path) is None:
-                # Create XML subelement for this Cell
-                cell_element = cell.create_xml_subelement(xml_element)
+            # Create XML subelement for this Cell
+            cell_element = cell.create_xml_subelement(xml_element, memo)
 
-                # Append the Universe ID to the subelement and add to Element
-                cell_element.set("universe", str(self._id))
-                xml_element.append(cell_element)
+            # Append the Universe ID to the subelement and add to Element
+            cell_element.set("universe", str(self._id))
+            xml_element.append(cell_element)
 
     def _determine_paths(self, path='', instances_only=False):
         """Count the number of instances for each cell in the universe, and
