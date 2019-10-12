@@ -390,7 +390,7 @@ class Material(IDManagerMixin):
         self._convert_to_distrib_comps = True
     
     # cvmt 
-    def add_nuclide(self, nuclide, percent, percent_type='ao', poly=None ):
+    def add_nuclide(self, nuclide, percent, percent_type='ao', poly=None, zernike=None, zernike1d=None ):
         """Add a nuclide to the material
 
         Parameters
@@ -448,6 +448,12 @@ class Material(IDManagerMixin):
                 self._nuclides.append((nuclide, percent, percent_type, poly_coeffs, poly_type))
             else:
                 self._nuclides.append((nuclide, percent, percent_type))
+        elif zernike is not None:
+          poly_type = 'zernike'
+          self._nuclides.append((nuclide, percent, percent_type, zernike, poly_type))
+        elif zernike1d is not None:
+          poly_type = 'zernike1d'
+          self._nuclides.append((nuclide, percent, percent_type, zernike1d, poly_type))
         else:
             self._nuclides.append((nuclide, percent, percent_type))
 
