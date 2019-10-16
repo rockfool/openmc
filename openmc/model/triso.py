@@ -835,7 +835,8 @@ def create_triso_lattice(trisos, lower_left, pitch, shape, background):
     triso_locations = {idx: [] for idx in indices}
     for t in trisos:
         for idx in t.classify(lattice):
-            if idx in sorted(triso_locations):
+            #if idx in sorted(triso_locations):
+            if idx in triso_locations:
                 # Create copy of TRISO particle with materials preserved and
                 # different cell/surface IDs
                 #t_copy = copy.deepcopy(t)
