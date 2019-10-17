@@ -52,14 +52,10 @@ class TRISO(openmc.Cell):
         self._surface = openmc.Sphere(r=outer_radius)
         super().__init__(fill=fill, region=-self._surface)
         self.center = np.asarray(center)
+        self._outer_radius = outer_radius
     
     def __deepcopy__(self):
-        return TRISO(outer_radius=1.0, fill=self.fill, center=self.center)
-        #copy_object.id = self.id
-        #copy_object.name = self.name
-        #copy_object.center = self.center
-        #copy_object.full = self.fill
-        #copy_object.region = self.region  
+        return TRISO(outer_radius=self._outer_radius, fill=self.fill, center=self.center)
 
     @property
     def center(self):
