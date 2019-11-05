@@ -26,6 +26,7 @@ from . import comm
 from .abc import TransportOperator, OperatorResult
 from .atom_number import AtomNumber
 from .reaction_rates import ReactionRates
+from .reaction_rates_fet import ReactionRatesFet
 from .results_list import ResultsList
 from .helpers import (
     DirectReactionRateHelper, ChainFissionHelper, ConstantFissionYieldHelper,
@@ -112,6 +113,10 @@ class Operator(TransportOperator):
         ``fission_yield_mode``. Will be passed directly on to the
         helper. Passing a value of None will use the defaults for
         the associated helper.
+    fet_order : integer, optional
+        The order of functional expansion tallied (fet) for nuclide 
+        number density. 
+        Default: 0        
 
     Attributes
     ----------
@@ -157,7 +162,7 @@ class Operator(TransportOperator):
     def __init__(self, geometry, settings, chain_file=None, prev_results=None,
                  diff_burnable_mats=False, energy_mode="fission-q",
                  fission_q=None, dilute_initial=1.0e3,
-                 fission_yield_mode="constant", fission_yield_opts=None):
+                 fission_yield_mode="constant", fission_yield_opts=None, fet_order=0):
         if fission_yield_mode not in self._fission_helpers:
             raise KeyError(
                 "fission_yield_mode must be one of {}, not {}".format(
@@ -177,6 +182,7 @@ class Operator(TransportOperator):
         self.settings = settings
         self.geometry = geometry
         self.diff_burnable_mats = diff_burnable_mats
+        self.fet_opt = fet_opt  
 
         # Differentiate burnable materials with multiple instances
         if self.diff_burnable_mats:
@@ -236,6 +242,11 @@ class Operator(TransportOperator):
             {} if fission_yield_opts is None else fission_yield_opts)
         self._yield_helper = fission_helper.from_operator(
             self, **fission_yield_opts)
+        
+        # Creat nuclide number density for fet option
+        if fet_order > 0:
+           self.reaction_rates = ReactionRatesFet(
+               self.local_mats, self._burnable_nucs, self.chain.reactions, self.fet_order) 
 
     def __call__(self, vec, power):
         """Runs a simulation.
@@ -674,6 +685,8 @@ class Operator(TransportOperator):
         self.chain.fission_yields = fission_yields
 
         return OperatorResult(k_combined, rates)
+        
+        if
 
     def _get_nuclides_with_data(self):
         """Loads a cross_sections.xml file to find participating nuclides.
