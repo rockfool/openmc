@@ -12,7 +12,7 @@ from numpy import dot, zeros, newaxis
 from . import comm
 from openmc.checkvalue import check_type, check_greater_than
 from openmc.lib import (
-    Tally, MaterialFilter, EnergyFilter, EnergyFunctionFilter)
+    Tally, MaterialFilter, EnergyFilter, EnergyFunctionFilter, ZernikeFilter)
 from .abc import (
     ReactionRateHelper, EnergyHelper, FissionYieldHelper,
     TalliedFissionYieldHelper)
@@ -36,14 +36,16 @@ class DirectReactionRateHelper(ReactionRateHelper):
         Number of burnable nuclides tracked by :class:`openmc.deplete.Operator`
     n_react : int
         Number of reactions tracked by :class:`openmc.deplete.Operator`
-
+    n_coeffs : int 
+        Number of FETs coefficients tracked by :class:`openmc.deplete.Operator`
+    
     Attributes
     ----------
     nuclides : list of str
         All nuclides with desired reaction rates.
     """
 
-    def generate_tallies(self, materials, scores):
+    def generate_tallies(self, materials, scores, fet_order=None, fet_radius=None):
         """Produce one-group reaction rate tally
 
         Uses the :mod:`openmc.lib` to generate a tally
@@ -61,8 +63,11 @@ class DirectReactionRateHelper(ReactionRateHelper):
         self._rate_tally = Tally()
         self._rate_tally.scores = scores
         self._rate_tally.filters = [MaterialFilter(materials)]
+        # fet 
+        if fet_order is not None and fet_radius is not None:
+            self._rate_tally.filters += [ZernikeFilter(order=fet_order, x=0.0, y=0.0, r=fet_radius)]
 
-    def get_material_rates(self, mat_id, nuc_index, react_index):
+    def get_material_rates(self, mat_id, nuc_index, react_index, num_coeffs=None):
         """Return an array of reaction rates for a material
 
         Parameters
@@ -78,14 +83,20 @@ class DirectReactionRateHelper(ReactionRateHelper):
         Returns
         -------
         rates : numpy.ndarray
-            Array with shape ``(n_nuclides, n_rxns)`` with the
+            Array with shape ``(n_nuclides, n_rxns, n_coeffs)`` with the
             reaction rates in this material
         """
+        #FETs
+        if num_coeffs is not None:
+            self.n_coeffs = num_coeffs
+        else:
+            self.n_coeffs = 1
+        #    
         self._results_cache.fill(0.0)
-        full_tally_res = self._rate_tally.results[mat_id, :, 1]
+        full_tally_res = self._rate_tally.results[mat_id, :, 1:num_coeffs] # need to confirm
         for i_tally, (i_nuc, i_react) in enumerate(
                 product(nuc_index, react_index)):
-            self._results_cache[i_nuc, i_react] = full_tally_res[i_tally]
+            self._results_cache[i_nuc, i_react] = full_tally_res[i_tally,:]
 
         return self._results_cache
 

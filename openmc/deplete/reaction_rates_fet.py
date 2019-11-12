@@ -4,7 +4,7 @@ Just contains a dictionary of np.arrays to store reaction rates.
 """
 
 import numpy as np
-import openmc import zernike
+from openmc import zernike
 
 
 class ReactionRatesFet:
@@ -14,8 +14,8 @@ class ReactionRatesFet:
 
     Parameters
     ----------
-    cell_to_ind : OrderedDict[int]
-        A dictionary mapping cell ID as string to index.
+    mats_to_ind : OrderedDict[int]
+        A dictionary mapping mats ID as string to index.
     nuc_to_ind : OrderedDict[int]
         A dictionary mapping nuclide name as string to index.
     react_to_ind : OrderedDict[int]
@@ -23,14 +23,14 @@ class ReactionRatesFet:
 
     Attributes
     ----------
-    cell_to_ind : OrderedDict[int]
-        A dictionary mapping cell ID as string to index.
+    mats_to_ind : OrderedDict[int]
+        A dictionary mapping mats ID as string to index.
     nuc_to_ind : OrderedDict[int]
         A dictionary mapping nuclide name as string to index.
     react_to_ind : OrderedDict[int]
         A dictionary mapping reaction name as string to index.
-    n_cell : int
-        Number of cells.
+    n_mats : int
+        Number of mats.
     n_nuc : int
         Number of nucs.
     n_react : int
@@ -41,13 +41,13 @@ class ReactionRatesFet:
         Array storing fet polynomial object indexed by the above dictionaries
     """
 
-    def __init__(self, cell_to_ind, nuc_to_ind, react_to_ind, max_poly_order=10):
+    def __init__(self, mats_to_ind, nuc_to_ind, react_to_ind, max_poly_order=10):
 
-        self.cell_to_ind = cell_to_ind
+        self.mats_to_ind = mats_to_ind
         self.nuc_to_ind = nuc_to_ind
         self.react_to_ind = react_to_ind
 
-        self.n_cell = len(cell_to_ind)
+        self.n_mats = len(mats_to_ind)
         self.n_nuc = len(nuc_to_ind)
         self.n_react = len(react_to_ind)
         self.max_poly_order = max_poly_order
@@ -56,16 +56,16 @@ class ReactionRatesFet:
         else:
             self.n_poly = 1
 
-        self.rates = np.zeros((self.n_cell, self.n_nuc, self.n_react, self.n_poly))
-        self.fets = [[[None for x in range(self.n_react)] for y in range(self.n_nuc)] for z in range(self.n_cell)]
-        #self.fets = np.zeros((self.n_cell, self.n_nuc, self.n_react))
+        self.rates = np.zeros((self.n_mats, self.n_nuc, self.n_react, self.n_poly))
+        self.fets = [[[None for x in range(self.n_react)] for y in range(self.n_nuc)] for z in range(self.n_mats)]
+        #self.fets = np.zeros((self.n_mats, self.n_nuc, self.n_react))
     def __getitem__(self, pos):
         """ Retrieves an item from reaction_rates.
 
         Parameters
         ----------
         pos : Tuple
-            A four-length tuple containing a cell index, a nuc index, a
+            A four-length tuple containing a mats index, a nuc index, a
             reaction index, and a polynomial index.  These indexes can be
             strings (which get converted to integers via the dictionaries),
             integers used directly, or slices.
@@ -76,21 +76,21 @@ class ReactionRatesFet:
             The value indexed from self.rates.
         """
 
-        cell, nuc, react, poly = pos
-        if isinstance(cell, str):
-            cell_id = self.cell_to_ind[cell]
+        mats, nuc, react, poly = pos
+        if isinstance(mats, str):
+            mats_id = self.mats_to_ind[mats]
         else:
-            cell_id = cell
+            mats_id = mats
         if isinstance(nuc, str):
             nuc_id = self.nuc_to_ind[nuc]
         else:
-            nuc_id = cell
+            nuc_id = nuc
         if isinstance(react, str):
             react_id = self.react_to_ind[react]
         else:
             react_id = react
 
-        return self.rates[cell_id, nuc_id, react_id, poly]
+        return self.rates[mats_id, nuc_id, react_id, poly]
 
     def __setitem__(self, pos, val):
         """ Sets an item from reaction_rates.
@@ -98,7 +98,7 @@ class ReactionRatesFet:
         Parameters
         ----------
         pos : Tuple
-            A four-length tuple containing a cell index, a nuc index, a
+            A four-length tuple containing a mats index, a nuc index, a
             reaction index, and a polynomial index.  These indexes can be
             strings (which get converted to integers via the dictionaries),
             integers used directly, or slices.
@@ -106,21 +106,21 @@ class ReactionRatesFet:
             The value to set the array to.
         """
 
-        cell, nuc, react, poly = pos
-        if isinstance(cell, str):
-            cell_id = self.cell_to_ind[cell]
+        mats, nuc, react, poly = pos
+        if isinstance(mats, str):
+            mats_id = self.mats_to_ind[mats]
         else:
-            cell_id = cell
+            mats_id = mats
         if isinstance(nuc, str):
             nuc_id = self.nuc_to_ind[nuc]
         else:
-            nuc_id = cell
+            nuc_id = nuc
         if isinstance(react, str):
             react_id = self.react_to_ind[react]
         else:
             react_id = react
 
-        self.rates[cell_id, nuc_id, react_id, poly] = val
+        self.rates[mats_id, nuc_id, react_id, poly] = val
         
     # TODO make these properties with decorators 
     def set_fet(self, pos, fet):
@@ -130,30 +130,30 @@ class ReactionRatesFet:
         Parameters
         ----------
         pos : Tuple
-            A four-length tuple containing a cell index, a nuc index, a
+            A four-length tuple containing a mats index, a nuc index, a
             reaction index.  These indexes can be strings (which get 
             converted to integers via the dictionaries), integers used 
             directly, or slices.
         fet : A ZernikePolynomial object
         """
-        cell, nuc, react = pos
-        if isinstance(cell, str):
-            cell_id = self.cell_to_ind[cell]
+        mats, nuc, react = pos
+        if isinstance(mats, str):
+            mats_id = self.mats_to_ind[mats]
         else:
-            cell_id = cell
+            mats_id = mats
         if isinstance(nuc, str):
             nuc_id = self.nuc_to_ind[nuc]
         else:
-            nuc_id = cell
+            nuc_id = nuc
         if isinstance(react, str):
             react_id = self.react_to_ind[react]
         else:
             react_id = react
             
-        self.fets[cell_id][nuc_id][react_id] = fet
+        self.fets[mats_id][nuc_id][react_id] = fet
 
         for i in range(0, fet.n_coeffs):
-            self[cell, nuc, react, i] = fet.coeffs[i]
+            self[mats, nuc, react, i] = fet.coeffs[i]
             
     def get_fet(self, pos):
         """ Gets the fet in the reaction rates object
@@ -161,24 +161,24 @@ class ReactionRatesFet:
         Parameters
         ----------
         pos : Tuple
-            A four-length tuple containing a cell index, a nuc index, a
+            A four-length tuple containing a mats index, a nuc index, a
             reaction index.  These indexes can be strings (which get 
             converted to integers via the dictionaries), integers used 
             directly, or slices.
         fet : A ZernikePolynomial object
         """
-        cell, nuc, react = pos
-        if isinstance(cell, str):
-            cell_id = self.cell_to_ind[cell]
+        mats, nuc, react = pos
+        if isinstance(mats, str):
+            mats_id = self.mats_to_ind[mats]
         else:
-            cell_id = cell
+            mats_id = mats
         if isinstance(nuc, str):
             nuc_id = self.nuc_to_ind[nuc]
         else:
-            nuc_id = cell
+            nuc_id = nuc
         if isinstance(react, str):
             react_id = self.react_to_ind[react]
         else:
             react_id = react
         
-        return self.fets[cell_id][nuc_id][react_id]
+        return self.fets[mats_id][nuc_id][react_id]

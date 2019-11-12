@@ -21,6 +21,7 @@ import numpy as np
 from uncertainties import ufloat
 
 import openmc
+from openmc import zernike as zer 
 import openmc.lib
 from . import comm
 from .abc import TransportOperator, OperatorResult
@@ -162,7 +163,7 @@ class Operator(TransportOperator):
     def __init__(self, geometry, settings, chain_file=None, prev_results=None,
                  diff_burnable_mats=False, energy_mode="fission-q",
                  fission_q=None, dilute_initial=1.0e3,
-                 fission_yield_mode="constant", fission_yield_opts=None, fet_order=0):
+                 fission_yield_mode="constant", fission_yield_opts=None):
         if fission_yield_mode not in self._fission_helpers:
             raise KeyError(
                 "fission_yield_mode must be one of {}, not {}".format(
@@ -181,8 +182,11 @@ class Operator(TransportOperator):
         self.prev_res = None
         self.settings = settings
         self.geometry = geometry
-        self.diff_burnable_mats = diff_burnable_mats
-        self.fet_opt = fet_opt  
+        self.diff_burnable_mats = diff_burnable_mats 
+        # fet 
+        if settings.fet_deplete is not None and settings.fet_deplete['enable'] == True:
+            self.fet_order = settings.fet_deplete['order']
+            self.fet_radius = settings.fet_deplete['radius']
 
         # Differentiate burnable materials with multiple instances
         if self.diff_burnable_mats:
@@ -192,7 +196,8 @@ class Operator(TransportOperator):
         openmc.reset_auto_ids()
         self.burnable_mats, volume, nuclides = self._get_burnable_mats()
         self.local_mats = _distribute(self.burnable_mats)
-
+        
+        
         # Generate map from local materials => material index
         self._mat_index_map = {
             lm: self.burnable_mats.index(lm) for lm in self.local_mats}
@@ -225,8 +230,9 @@ class Operator(TransportOperator):
 
         # Create reaction rates array
         self.reaction_rates = ReactionRates(
-            self.local_mats, self._burnable_nucs, self.chain.reactions)
-
+            self.local_mats, self._burnable_nucs, self.chain.reactions,
+            max_poly_order=self.fet_order) # FETs 
+        
         # Get classes to assist working with tallies
         self._rate_helper = DirectReactionRateHelper(
             self.reaction_rates.n_nuc, self.reaction_rates.n_react)
@@ -235,7 +241,7 @@ class Operator(TransportOperator):
         else:
             score = "heating" if settings.photon_transport else "heating-local"
             self._energy_helper = EnergyScoreHelper(score)
-
+        
         # Select and create fission yield helper
         fission_helper = self._fission_helpers[fission_yield_mode]
         fission_yield_opts = (
@@ -243,10 +249,6 @@ class Operator(TransportOperator):
         self._yield_helper = fission_helper.from_operator(
             self, **fission_yield_opts)
         
-        # Creat nuclide number density for fet option
-        if fet_order > 0:
-           self.reaction_rates = ReactionRatesFet(
-               self.local_mats, self._burnable_nucs, self.chain.reactions, self.fet_order) 
 
     def __call__(self, vec, power):
         """Runs a simulation.
@@ -276,10 +278,10 @@ class Operator(TransportOperator):
 
         # Update material compositions and tally nuclides
         self._update_materials()
-        nuclides = self._get_tally_nuclides()
-        self._rate_helper.nuclides = nuclides
-        self._energy_helper.nuclides = nuclides
-        self._yield_helper.update_tally_nuclides(nuclides)
+        nuclides = self._get_tally_nuclides() # FETs ?
+        self._rate_helper.nuclides = nuclides # FETs ?
+        self._energy_helper.nuclides = nuclides # FETs ?
+        self._yield_helper.update_tally_nuclides(nuclides) #FETs ?
 
         # Run OpenMC
         openmc.lib.reset()
@@ -612,6 +614,9 @@ class Operator(TransportOperator):
             Eigenvalue and reaction rates resulting from transport operator
 
         """
+        
+        mp = zer.num_poly(settings.fet_order)
+        
         rates = self.reaction_rates
         rates.fill(0.0)
 
@@ -686,7 +691,6 @@ class Operator(TransportOperator):
 
         return OperatorResult(k_combined, rates)
         
-        if
 
     def _get_nuclides_with_data(self):
         """Loads a cross_sections.xml file to find participating nuclides.

@@ -219,6 +219,9 @@ class Settings(object):
         self._log_grid_bins = None
 
         self._dagmc = False
+        
+        # FETs
+        self._fet_deplete = {}
 
     @property
     def run_mode(self):
@@ -343,6 +346,10 @@ class Settings(object):
     @property
     def resonance_scattering(self):
         return self._resonance_scattering
+
+    @property
+    def fet_deplete(self):
+        return self._fet_deplete
 
     @property
     def volume_calculations(self):
@@ -669,6 +676,25 @@ class Settings(object):
                 cv.check_type('resonance scattering nuclides', value,
                               Iterable, str)
         self._resonance_scattering = res
+        
+    #FETs
+    @fet_deplete.setter
+    def fet_deplete(self, fet):
+        cv.check_type('fet deplete settings', fet, Mapping)
+        keys = ('enable', 'order', 'radius')
+        for key, value in fet.items():
+            cv.check_value('fet deplete dictionary key', key, keys)
+            if key == 'enable':
+                cv.check_type('fet deplete enable', value, bool)
+            elif key == 'order':
+                name = 'fet deplete order'
+                cv.check_type(name, value, Integral)
+                cv.check_greater_than(name, value, 0)
+            elif key == 'radius':
+                name = 'fet deplete radius'
+                cv.check_type(name, value, Real)
+                cv.check_greater_than(name, value, 0)
+        self._fet_deplete = fet
 
     @volume_calculations.setter
     def volume_calculations(self, vol_calcs):
@@ -911,6 +937,7 @@ class Settings(object):
             if 'nuclides' in res:
                 subelem = ET.SubElement(elem, 'nuclides')
                 subelem.text = ' '.join(res['nuclides'])
+    #FETs to do
 
     def _create_create_fission_neutrons_subelement(self, root):
         if self._create_fission_neutrons is not None:

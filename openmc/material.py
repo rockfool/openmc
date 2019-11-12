@@ -100,7 +100,7 @@ class Material(IDManagerMixin):
         self._atoms = {}
         self._isotropic = []
 
-        # A list of tuples (nuclide, percent, percent type)
+        # A list of tuples (nuclide, percent, percent type, poly_zernike) # FETs
         self._nuclides = []
 
         # The single instance of Macroscopic data present in this material
@@ -132,9 +132,14 @@ class Material(IDManagerMixin):
 
         string += '{: <16}\n'.format('\tNuclides')
 
-        for nuclide, percent, percent_type in self._nuclides:
+        for nuclide, percent, percent_type, *_ in self._nuclides: # FETs
             string += '{: <16}'.format('\t{}'.format(nuclide))
-            string += '=\t{: <12} [{}]\n'.format(percent, percent_type)
+            string += '=\t{: <12} [{}]\n'.format(percent, percent_type) 
+            
+            if len(self._nuclides) > 3: # FETs
+                string += '=\t{: <12} [{}]\n'.format('poly_coeffs', \
+                          ' '.join([str(c) for c in nuclide[3]])) 
+                string += '=\t{: <12} [{}]\n'.format('poly_type', nuclide[4])  
 
         if self._macroscopic is not None:
             string += '{: <16}\n'.format('\tMacroscopic Data')
