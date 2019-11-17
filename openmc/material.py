@@ -667,8 +667,12 @@ class Material(IDManagerMixin):
         nuclides = OrderedDict()
         
         #cvmt 
-        for nuclide, density, density_type, *_ in self._nuclides:
-            nuclides[nuclide] = (nuclide, density, density_type)
+        if len(self._nuclides)>3:
+            for nuclide, density, density_type, poly_coeffs, poly_type in self._nuclides:
+                nuclides[nuclide] = (nuclide, density, density_type, poly_coeffs, poly_type)
+        else:
+            for nuclide, density, density_type, *_ in self._nuclides:
+                nuclides[nuclide] = (nuclide, density, density_type)
 
         return nuclides
 

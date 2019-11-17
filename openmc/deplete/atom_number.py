@@ -5,6 +5,7 @@ An ndarray to store atom densities with string, integer, or slice indexing.
 from collections import OrderedDict
 
 import numpy as np
+from openmc import zernike as zer
 
 
 class AtomNumber(object):
@@ -44,7 +45,7 @@ class AtomNumber(object):
         Number of nuclides.
 
     """
-    def __init__(self, local_mats, nuclides, volume, n_nuc_burn):
+    def __init__(self, local_mats, nuclides, volume, n_nuc_burn, order=None):
         self.index_mat = OrderedDict((mat, i) for i, mat in enumerate(local_mats))
         self.index_nuc = OrderedDict((nuc, i) for i, nuc in enumerate(nuclides))
 
@@ -55,10 +56,15 @@ class AtomNumber(object):
                 self.volume[ind] = val
 
         self.n_nuc_burn = n_nuc_burn
-
-        self.number = np.zeros((len(local_mats), len(nuclides)))
-
-    def __getitem__(self, pos):
+        
+        if order is None:
+            mp = 1
+        else:
+            mp = zer.num_poly(order)  
+        
+        self.number = np.zeros((len(local_mats), len(nuclides)), mp) # FETs 
+        
+    def __getitem__(self, pos, order=None):
         """Retrieves total atom number from AtomNumber.
 
         Parameters
@@ -80,9 +86,9 @@ class AtomNumber(object):
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
 
-        return self.number[mat, nuc]
+        return self.number[mat, nuc, :]
 
-    def __setitem__(self, pos, val):
+    def __setitem__(self, pos, val, order=None):
         """Sets total atom number into AtomNumber.
 
         Parameters
@@ -101,7 +107,7 @@ class AtomNumber(object):
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
 
-        self.number[mat, nuc] = val
+        self.number[mat, nuc, :] = val[:]
 
     @property
     def materials(self):
@@ -163,7 +169,7 @@ class AtomNumber(object):
 
         self[mat, nuc] = val * self.volume[mat]
 
-    def get_mat_slice(self, mat):
+    def get_mat_slice(self, mat, order=None):
         """Gets atom quantity indexed by mats for all burned nuclides
 
         Parameters
@@ -177,12 +183,18 @@ class AtomNumber(object):
             The slice requested in [atom].
 
         """
+        # FETs 
+        if order is None:
+            mp = 1
+        else:
+            mp = zer.num_poly(order)
+        
         if isinstance(mat, str):
             mat = self.index_mat[mat]
 
-        return self[mat, :self.n_nuc_burn]
+        return self[mat, :self.n_nuc_burn * mp]
 
-    def set_mat_slice(self, mat, val):
+    def set_mat_slice(self, mat, val, order=None):
         """Sets atom quantity indexed by mats for all burned nuclides
 
         Parameters
@@ -193,12 +205,19 @@ class AtomNumber(object):
             The slice to set in [atom]
 
         """
+        # FETs 
+        if order is None:
+            mp = 1
+        else:
+            mp = zer.num_poly(order)
+        
         if isinstance(mat, str):
             mat = self.index_mat[mat]
 
-        self[mat, :self.n_nuc_burn] = val
-
-    def set_density(self, total_density):
+        self[mat, :self.n_nuc_burn * mp] = val
+        
+        
+    def set_density(self, total_density, order=None):
         """Sets density.
 
         Sets the density in the exact same order as total_density_list outputs,
@@ -211,4 +230,4 @@ class AtomNumber(object):
 
         """
         for i, density_slice in enumerate(total_density):
-            self.set_mat_slice(i, density_slice)
+            self.set_mat_slice(i, density_slice, order)

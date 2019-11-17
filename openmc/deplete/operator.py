@@ -274,7 +274,7 @@ class Operator(TransportOperator):
         openmc.reset_auto_ids()
 
         # Update status
-        self.number.set_density(vec)
+        self.number.set_density(vec, self.fet_order) # FETs 
 
         # Update material compositions and tally nuclides
         self._update_materials()
@@ -615,7 +615,7 @@ class Operator(TransportOperator):
 
         """
         
-        mp = zer.num_poly(settings.fet_order)
+        mp = zer.num_poly(self.fet_order)
         
         rates = self.reaction_rates
         rates.fill(0.0)
