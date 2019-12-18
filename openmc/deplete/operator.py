@@ -227,7 +227,8 @@ class Operator(TransportOperator):
                                if nuc.name in self.nuclides_with_data]
 
         # Extract number densities from the geometry / previous depletion run
-        self._extract_number(self.local_mats, volume, nuclides, self.prev_res)
+        self._extract_number(self.local_mats, volume, nuclides, self.prev_res, # FETs 
+                             max_poly_order=self.fet_order)
 
         # Create reaction rates array
         self.reaction_rates = ReactionRates(
@@ -380,7 +381,7 @@ class Operator(TransportOperator):
 
         return burnable_mats, volume, nuclides
 
-    def _extract_number(self, local_mats, volume, nuclides, prev_res=None):
+    def _extract_number(self, local_mats, volume, nuclides, prev_res=None, max_poly_order=None):
         """Construct AtomNumber using geometry
 
         Parameters
@@ -395,7 +396,7 @@ class Operator(TransportOperator):
             Results from a previous depletion calculation
 
         """
-        self.number = AtomNumber(local_mats, nuclides, volume, len(self.chain))
+        self.number = AtomNumber(local_mats, nuclides, volume, len(self.chain), order=max_poly_order)
 
         if self.dilute_initial != 0.0:
             for nuc in self._burnable_nucs:

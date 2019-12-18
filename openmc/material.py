@@ -136,7 +136,7 @@ class Material(IDManagerMixin):
             string += '{: <16}'.format('\t{}'.format(nuclide))
             string += '=\t{: <12} [{}]\n'.format(percent, percent_type) 
             
-            if len(tmp_args) > 0: # FETs
+            if len(tmp_args) > 0: # cvmt FETs
                 string += '=\t{: <12} [{}]\n'.format('poly_coeffs', \
                           ' '.join([str(c) for c in tmp_args[0]])) 
                 string += '=\t{: <12} [{}]\n'.format('poly_type', tmp_args[1])  
@@ -666,12 +666,11 @@ class Material(IDManagerMixin):
 
         nuclides = OrderedDict()
         
-        #cvmt 
-        if len(self._nuclides)>3:
-            for nuclide, density, density_type, poly_coeffs, poly_type in self._nuclides:
-                nuclides[nuclide] = (nuclide, density, density_type, poly_coeffs, poly_type)
-        else:
-            for nuclide, density, density_type, *_ in self._nuclides:
+        #cvmt FETs
+        for nuclide, density, density_type, *tmp_args in self._nuclides:
+            if len(tmp_args) > 0:
+                nuclides[nuclide] = (nuclide, density, density_type, tmp_args[0], tmp_args[1])
+            else:
                 nuclides[nuclide] = (nuclide, density, density_type)
 
         return nuclides

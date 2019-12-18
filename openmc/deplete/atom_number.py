@@ -62,7 +62,9 @@ class AtomNumber(object):
         else:
             mp = zer.num_poly(order)  
         
-        self.number = np.zeros((len(local_mats), len(nuclides)), mp) # FETs 
+        print(len(local_mats), len(nuclides), mp) # Testing for FETs 
+        
+        self.number = np.zeros(shape=(len(local_mats), len(nuclides), mp)) # FETs 
         
     def __getitem__(self, pos, order=None):
         """Retrieves total atom number from AtomNumber.
