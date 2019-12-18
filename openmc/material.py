@@ -132,14 +132,14 @@ class Material(IDManagerMixin):
 
         string += '{: <16}\n'.format('\tNuclides')
 
-        for nuclide, percent, percent_type, *_ in self._nuclides: # FETs
+        for nuclide, percent, percent_type, *tmp_args in self._nuclides: # FETs
             string += '{: <16}'.format('\t{}'.format(nuclide))
             string += '=\t{: <12} [{}]\n'.format(percent, percent_type) 
             
-            if len(self._nuclides) > 3: # FETs
+            if len(tmp_args) > 0: # FETs
                 string += '=\t{: <12} [{}]\n'.format('poly_coeffs', \
-                          ' '.join([str(c) for c in nuclide[3]])) 
-                string += '=\t{: <12} [{}]\n'.format('poly_type', nuclide[4])  
+                          ' '.join([str(c) for c in tmp_args[0]])) 
+                string += '=\t{: <12} [{}]\n'.format('poly_type', tmp_args[1])  
 
         if self._macroscopic is not None:
             string += '{: <16}\n'.format('\tMacroscopic Data')
