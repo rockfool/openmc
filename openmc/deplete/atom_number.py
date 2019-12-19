@@ -45,7 +45,7 @@ class AtomNumber(object):
         Number of nuclides.
 
     """
-    def __init__(self, local_mats, nuclides, volume, n_nuc_burn, order=None):
+    def __init__(self, local_mats, nuclides, volume, n_nuc_burn, fet_deplete=None):
         self.index_mat = OrderedDict((mat, i) for i, mat in enumerate(local_mats))
         self.index_nuc = OrderedDict((nuc, i) for i, nuc in enumerate(nuclides))
 
@@ -57,16 +57,20 @@ class AtomNumber(object):
 
         self.n_nuc_burn = n_nuc_burn
         
-        if order is None:
+        # cvmt FETs 
+        if fet_deplete is None:
             mp = 1
         else:
-            mp = zer.num_poly(order)  
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])            
         
         print(len(local_mats), len(nuclides), mp) # Testing for FETs 
         
         self.number = np.zeros(shape=(len(local_mats), len(nuclides), mp)) # FETs 
         
-    def __getitem__(self, pos, order=None):
+    def __getitem__(self, pos, fet_deplete=None):
         """Retrieves total atom number from AtomNumber.
 
         Parameters
@@ -87,10 +91,13 @@ class AtomNumber(object):
             mat = self.index_mat[mat]
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
+        # FETs 
+        if fet_deplete is not None:
+            return self.number[mat, nuc, :]
+        else:
+            return self.number[mat, nuc]
 
-        return self.number[mat, nuc, :]
-
-    def __setitem__(self, pos, val, order=None):
+    def __setitem__(self, pos, val, fet_deplete=None):
         """Sets total atom number into AtomNumber.
 
         Parameters
@@ -108,8 +115,11 @@ class AtomNumber(object):
             mat = self.index_mat[mat]
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
-
-        self.number[mat, nuc, :] = val[:]
+        # FETs 
+        if fet_deplete is None:
+            self.number[mat, nuc] = val
+        else:
+            self.number[mat, nuc, :] = val[:]
 
     @property
     def materials(self):
@@ -128,7 +138,7 @@ class AtomNumber(object):
         return [nuc for nuc, ind in self.index_nuc.items()
                 if ind < self.n_nuc_burn]
 
-    def get_atom_density(self, mat, nuc):
+    def get_atom_density(self, mat, nuc, fet=False):
         """Accesses atom density instead of total number.
 
         Parameters
@@ -148,10 +158,15 @@ class AtomNumber(object):
             mat = self.index_mat[mat]
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
+        # FETs 
+        if not fet:
+            return self[mat, nuc] / self.volume[mat]
+        else:
+            val = self[mat, nuc, :]
+            val[0] /= self.volume[mat]
+            return val
 
-        return self[mat, nuc] / self.volume[mat]
-
-    def set_atom_density(self, mat, nuc, val):
+    def set_atom_density(self, mat, nuc, val, fet=False):
         """Sets atom density instead of total number.
 
         Parameters
@@ -168,10 +183,14 @@ class AtomNumber(object):
             mat = self.index_mat[mat]
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
+        # FETs 
+        if not fet: 
+            self[mat, nuc] = val * self.volume[mat]
+        else:
+            self[mat, nuc, :] = val[:] 
+            self[mat, nuc, 0] *= self.volume[mat]
 
-        self[mat, nuc] = val * self.volume[mat]
-
-    def get_mat_slice(self, mat, order=None):
+    def get_mat_slice(self, mat, fet_deplete=None):
         """Gets atom quantity indexed by mats for all burned nuclides
 
         Parameters
@@ -186,17 +205,18 @@ class AtomNumber(object):
 
         """
         # FETs 
-        if order is None:
-            mp = 1
-        else:
-            mp = zer.num_poly(order)
-        
+        if fet_deplete is None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #
         if isinstance(mat, str):
             mat = self.index_mat[mat]
 
         return self[mat, :self.n_nuc_burn * mp]
 
-    def set_mat_slice(self, mat, val, order=None):
+    def set_mat_slice(self, mat, val, fet_deplete=None):
         """Sets atom quantity indexed by mats for all burned nuclides
 
         Parameters
@@ -219,7 +239,7 @@ class AtomNumber(object):
         self[mat, :self.n_nuc_burn * mp] = val
         
         
-    def set_density(self, total_density, order=None):
+    def set_density(self, total_density, fet_deplete=None):
         """Sets density.
 
         Sets the density in the exact same order as total_density_list outputs,
@@ -232,4 +252,4 @@ class AtomNumber(object):
 
         """
         for i, density_slice in enumerate(total_density):
-            self.set_mat_slice(i, density_slice, order)
+            self.set_mat_slice(i, density_slice, fet_deplete)

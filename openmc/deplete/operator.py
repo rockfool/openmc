@@ -184,10 +184,10 @@ class Operator(TransportOperator):
         self.settings = settings
         self.geometry = geometry
         self.diff_burnable_mats = diff_burnable_mats 
-        # fet 
+        # FETs 
+        self.fet_deplete = None
         if settings.fet_deplete is not None and settings.fet_deplete['enable'] == True:
-            self.fet_order = settings.fet_deplete['order']
-            self.fet_radius = settings.fet_deplete['radius']
+            self.fet_deplete = settings.fet_deplete
 
         # Differentiate burnable materials with multiple instances
         if self.diff_burnable_mats:
@@ -228,12 +228,12 @@ class Operator(TransportOperator):
 
         # Extract number densities from the geometry / previous depletion run
         self._extract_number(self.local_mats, volume, nuclides, self.prev_res, # FETs 
-                             max_poly_order=self.fet_order)
+                             fet_deplete=self.fet_deplete)
 
         # Create reaction rates array
         self.reaction_rates = ReactionRates(
             self.local_mats, self._burnable_nucs, self.chain.reactions,
-            max_poly_order=self.fet_order) # FETs 
+            fet_deplete=self.fet_deplete) # FETs 
         
         # Get classes to assist working with tallies
         self._rate_helper = DirectReactionRateHelper(
@@ -276,8 +276,9 @@ class Operator(TransportOperator):
         openmc.reset_auto_ids()
 
         # Update status
-        self.number.set_density(vec, self.fet_order) # FETs 
-
+        print(vec)
+        self.number.set_density(vec, self.fet_deplete) # FETs 
+        
         # Update material compositions and tally nuclides
         self._update_materials()
         nuclides = self._get_tally_nuclides() # FETs ?
@@ -381,7 +382,7 @@ class Operator(TransportOperator):
 
         return burnable_mats, volume, nuclides
 
-    def _extract_number(self, local_mats, volume, nuclides, prev_res=None, max_poly_order=None):
+    def _extract_number(self, local_mats, volume, nuclides, prev_res=None, fet_deplete=None):
         """Construct AtomNumber using geometry
 
         Parameters
@@ -396,7 +397,7 @@ class Operator(TransportOperator):
             Results from a previous depletion calculation
 
         """
-        self.number = AtomNumber(local_mats, nuclides, volume, len(self.chain), order=max_poly_order)
+        self.number = AtomNumber(local_mats, nuclides, volume, len(self.chain), fet_deplete=fet_deplete)
 
         if self.dilute_initial != 0.0:
             for nuc in self._burnable_nucs:
@@ -426,9 +427,14 @@ class Operator(TransportOperator):
         """
         mat_id = str(mat.id)
 
-        for nuclide, density in mat.get_nuclide_atom_densities().values():
-            number = density * 1.0e24
-            self.number.set_atom_density(mat_id, nuclide, number)
+        for nuclide, density, *temp_args in mat.get_nuclide_atom_densities().values():
+            if len(temp_args) > 0:
+                number = density * 1.0e24
+                self.number.set_atom_density(mat_id, nuclide, number)
+            else:
+                coeff.append(density * 1.0e24)
+                coeff.append(temp_args[0][1:])
+                self.number.set_atom_density(mat_id, nuclide, coeff, fet=True)
 
     def _set_number_from_results(self, mat, prev_res):
         """Extracts material nuclides and number densities.

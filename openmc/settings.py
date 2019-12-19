@@ -221,7 +221,7 @@ class Settings(object):
         self._dagmc = False
         
         # FETs
-        self._fet_deplete = {}
+        self._fet_deplete = None
 
     @property
     def run_mode(self):
@@ -681,7 +681,7 @@ class Settings(object):
     @fet_deplete.setter
     def fet_deplete(self, fet):
         cv.check_type('fet deplete settings', fet, Mapping)
-        keys = ('enable', 'order', 'radius')
+        keys = ('enable', 'order', 'radius', 'name')
         for key, value in fet.items():
             cv.check_value('fet deplete dictionary key', key, keys)
             if key == 'enable':
@@ -694,6 +694,9 @@ class Settings(object):
                 name = 'fet deplete radius'
                 cv.check_type(name, value, Real)
                 cv.check_greater_than(name, value, 0)
+            elif key == 'name':
+                name = 'fet deplete name'
+                cv.check_type(name, value, str)
         self._fet_deplete = fet
 
     @volume_calculations.setter

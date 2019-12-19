@@ -54,12 +54,17 @@ class ReactionRates(np.ndarray):
     # the __array_finalize__ method (discussed here:
     # https://docs.scipy.org/doc/numpy/user/basics.subclassing.html)
 
-    def __new__(cls, local_mats, nuclides, reactions, from_results=False, max_poly_order=None):
+    def __new__(cls, local_mats, nuclides, reactions, from_results=False, fet_deplete=None):
         # Create appropriately-sized zeroed-out ndarray
-        n_poly = 1
-        if max_poly_order is not None:
-            n_poly = zer.num_poly(max_poly_order)
-            shape = (len(local_mats), len(nuclides), len(reactions), n_poly)  # FETs
+        
+        # FETs
+        mp = 1
+        if fet_deplete is not None: 
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+            shape = (len(local_mats), len(nuclides), len(reactions), mp)  
         else:
             shape = (len(local_mats), len(nuclides), len(reactions))
         obj = super().__new__(cls, shape)
@@ -70,7 +75,7 @@ class ReactionRates(np.ndarray):
             obj.index_mat = local_mats
             obj.index_nuc = nuclides
             obj.index_rx = reactions
-            obj.n_poly = n_poly # FETs
+            obj.n_poly = mp # FETs
         # Else, assumes that reaction rates are ordered the same way as
         # the lists of local_mats, nuclides and reactions (or keys if these
         # are dictionnaries)
@@ -78,7 +83,7 @@ class ReactionRates(np.ndarray):
             obj.index_mat = {mat: i for i, mat in enumerate(local_mats)}
             obj.index_nuc = {nuc: i for i, nuc in enumerate(nuclides)}
             obj.index_rx = {rx: i for i, rx in enumerate(reactions)}
-            obj.n_poly = n_poly # FETs 
+            obj.n_poly = mp # FETs 
             
         return obj
 

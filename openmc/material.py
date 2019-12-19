@@ -261,7 +261,7 @@ class Material(IDManagerMixin):
         if self.volume is None:
             raise ValueError("Volume must be set in order to determine mass.")
         density = 0.0
-        for nuc, atoms_per_cc in self.get_nuclide_atom_densities().values():
+        for nuc, atoms_per_cc, *temp_args in self.get_nuclide_atom_densities().values():
             Z = openmc.data.zam(nuc)[0]
             if Z >= 90:
                 density += 1e24 * atoms_per_cc * openmc.data.atomic_mass(nuc) \
@@ -710,12 +710,17 @@ class Material(IDManagerMixin):
         nucs = []
         nuc_densities = []
         nuc_density_types = []
+        #FETs
+        nuc_dummy = []
 
         for nuclide in nuclides.items():
-            nuc, nuc_density, nuc_density_type = nuclide[1]
+            nuc, nuc_density, nuc_density_type, *temp_args = nuclide[1] # FETs 
             nucs.append(nuc)
             nuc_densities.append(nuc_density)
             nuc_density_types.append(nuc_density_type)
+            # FETs 
+            if len(temp_args) > 0: 
+                nuc_dummy.append(temp_args)
 
         nucs = np.array(nucs)
         nuc_densities = np.array(nuc_densities)
@@ -746,9 +751,14 @@ class Material(IDManagerMixin):
         nuc_densities = density * nuc_densities
 
         nuclides = OrderedDict()
+        # FETs 
         for n, nuc in enumerate(nucs):
-            nuclides[nuc] = (nuc, nuc_densities[n])
-
+            if len(nuc_dummy) > 0:
+                nuc_dummy[n][0][1] = nuc_densities[n]
+                nuclides[nuc] = (nuc, nuc_densities[n], nuc_dummy[n])
+            else:
+                nuclides[nuc] = (nuc, nuc_densities[n])
+            #print(nuclides[nuc]) # testing for FETs 
         return nuclides
 
     def get_mass_density(self, nuclide=None):
