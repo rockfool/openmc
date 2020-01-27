@@ -58,19 +58,17 @@ class AtomNumber(object):
         self.n_nuc_burn = n_nuc_burn
         
         # cvmt FETs 
-        if fet_deplete is None:
-            mp = 1
-        else:
+        mp = 1
+        if fet_deplete is not None:
             if fet_deplete['name']== 'zernike':
                 mp = zer.num_poly(fet_deplete['order'])
             elif fet['name']=='zernike1d':
-                mp = zer.num_poly1d(fet_deplete['order'])            
+                mp = zer.num_poly1d(fet_deplete['order']) 
+        #
+        self.number = np.zeros((len(local_mats), len(nuclides) * mp))
+        #print(len(local_mats), len(nuclides) * mp) # Testing for FETs  
         
-        print(len(local_mats), len(nuclides), mp) # Testing for FETs 
-        
-        self.number = np.zeros(shape=(len(local_mats), len(nuclides), mp)) # FETs 
-        
-    def __getitem__(self, pos, fet_deplete=None):
+    def __getitem__(self, pos):
         """Retrieves total atom number from AtomNumber.
 
         Parameters
@@ -91,13 +89,21 @@ class AtomNumber(object):
             mat = self.index_mat[mat]
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
+        return self.number[mat, nuc]
         # FETs 
-        if fet_deplete is not None:
-            return self.number[mat, nuc, :]
-        else:
-            return self.number[mat, nuc]
+        #mp = 1
+        #if fet_deplete is not None:
+        #    if fet_deplete['name']== 'zernike':
+        #        mp = zer.num_poly(fet_deplete['order'])
+        #    elif fet['name']=='zernike1d':
+        #        mp = zer.num_poly1d(fet_deplete['order'])    
+        #    return self.number[mat, nuc * (mp - 1) : nuc * mp]
+        ##
+        #else:
+        #    return self.number[mat, nuc]
+        
 
-    def __setitem__(self, pos, val, fet_deplete=None):
+    def __setitem__(self, pos, val):
         """Sets total atom number into AtomNumber.
 
         Parameters
@@ -115,12 +121,20 @@ class AtomNumber(object):
             mat = self.index_mat[mat]
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
+        #print(mat, nuc, val)   
+        self.number[mat, nuc] = val
         # FETs 
-        if fet_deplete is None:
-            self.number[mat, nuc] = val
-        else:
-            self.number[mat, nuc, :] = val[:]
-
+        #mp = 1 
+        #if fet_deplete is not None:
+        #    if fet_deplete['name']== 'zernike':
+        #        mp = zer.num_poly(fet_deplete['order'])
+        #    elif fet['name']=='zernike1d':
+        #        mp = zer.num_poly1d(fet_deplete['order'])    
+        #    self.number[mat, nuc * (mp - 1) : nuc * mp] = val[1 : mp]
+        ##
+        #else:
+        #    self.number[mat, nuc] = val
+        
     @property
     def materials(self):
         return self.index_mat.keys()
@@ -138,7 +152,7 @@ class AtomNumber(object):
         return [nuc for nuc, ind in self.index_nuc.items()
                 if ind < self.n_nuc_burn]
 
-    def get_atom_density(self, mat, nuc, fet=False):
+    def get_atom_density(self, mat, nuc, fet_deplete=None):
         """Accesses atom density instead of total number.
 
         Parameters
@@ -159,14 +173,22 @@ class AtomNumber(object):
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
         # FETs 
-        if not fet:
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+            #
+            coeff = self[mat, nuc * mp : (nuc + 1) * mp]
+            coeff[0] /= self.volume[mat]
+            return coeff
+        #
+        else: 
             return self[mat, nuc] / self.volume[mat]
-        else:
-            val = self[mat, nuc, :]
-            val[0] /= self.volume[mat]
-            return val
-
-    def set_atom_density(self, mat, nuc, val, fet=False):
+        
+        
+    def set_atom_density(self, mat, nuc, val, fet_deplete=None):
         """Sets atom density instead of total number.
 
         Parameters
@@ -183,12 +205,19 @@ class AtomNumber(object):
             mat = self.index_mat[mat]
         if isinstance(nuc, str):
             nuc = self.index_nuc[nuc]
-        # FETs 
-        if not fet: 
-            self[mat, nuc] = val * self.volume[mat]
+        # FETs
+        mp = 1 
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])    
+            for i in range(mp):
+                self[mat, nuc * mp + i] = val[i]
+            self[mat, nuc * mp] *= self.volume[mat]
+        #    
         else:
-            self[mat, nuc, :] = val[:] 
-            self[mat, nuc, 0] *= self.volume[mat]
+            self[mat, nuc] = val * self.volume[mat]
 
     def get_mat_slice(self, mat, fet_deplete=None):
         """Gets atom quantity indexed by mats for all burned nuclides
@@ -205,7 +234,8 @@ class AtomNumber(object):
 
         """
         # FETs 
-        if fet_deplete is None:
+        mp = 1
+        if fet_deplete is not None:
             if fet_deplete['name']== 'zernike':
                 mp = zer.num_poly(fet_deplete['order'])
             elif fet['name']=='zernike1d':
@@ -213,7 +243,7 @@ class AtomNumber(object):
         #
         if isinstance(mat, str):
             mat = self.index_mat[mat]
-
+        
         return self[mat, :self.n_nuc_burn * mp]
 
     def set_mat_slice(self, mat, val, fet_deplete=None):
@@ -228,14 +258,17 @@ class AtomNumber(object):
 
         """
         # FETs 
-        if order is None:
-            mp = 1
-        else:
-            mp = zer.num_poly(order)
-        
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #
         if isinstance(mat, str):
             mat = self.index_mat[mat]
-
+         
+        print(mat, self.n_nuc_burn * mp) # FETs  
         self[mat, :self.n_nuc_burn * mp] = val
         
         

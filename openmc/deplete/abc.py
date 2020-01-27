@@ -236,7 +236,7 @@ class ReactionRateHelper(ABC):
         All nuclides with desired reaction rates.
     """
 
-    def __init__(self, n_nucs, n_react):
+    def __init__(self, n_nucs, n_react): #FETs 
         self._nuclides = None
         self._rate_tally = None
         self._results_cache = empty((n_nucs, n_react))
@@ -709,6 +709,7 @@ class Integrator(ABC):
         """Get beginning of step concentrations, reaction rates from Operator
         """
         x = deepcopy(bos_conc)
+        print(x) # testing for FETs 
         res = self.operator(x, step_power)
         self.operator.write_bos_data(step_index + self._i_res)
         return x, res

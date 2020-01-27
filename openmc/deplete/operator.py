@@ -276,15 +276,15 @@ class Operator(TransportOperator):
         openmc.reset_auto_ids()
 
         # Update status
-        print(vec)
+        print(vec) # FETs testing 
         self.number.set_density(vec, self.fet_deplete) # FETs 
         
         # Update material compositions and tally nuclides
         self._update_materials()
-        nuclides = self._get_tally_nuclides() # FETs ?
-        self._rate_helper.nuclides = nuclides # FETs ?
-        self._energy_helper.nuclides = nuclides # FETs ?
-        self._yield_helper.update_tally_nuclides(nuclides) #FETs ?
+        nuclides = self._get_tally_nuclides() # FETs no change
+        self._rate_helper.nuclides = nuclides # FETs no change
+        self._energy_helper.nuclides = nuclides # FETs no change
+        self._yield_helper.update_tally_nuclides(nuclides) #FETs no change
 
         # Run OpenMC
         openmc.lib.reset()
@@ -415,7 +415,8 @@ class Operator(TransportOperator):
             for mat in self.geometry.get_all_materials().values():
                 if str(mat.id) in local_mats:
                     self._set_number_from_results(mat, prev_res)
-
+        #print(self.number.number) # FETs testing 
+        
     def _set_number_from_mat(self, mat):
         """Extracts material and number densities from openmc.Material
 
@@ -425,16 +426,23 @@ class Operator(TransportOperator):
             The material to read from
 
         """
+        import itertools
+        
         mat_id = str(mat.id)
-
+        # FETs 
         for nuclide, density, *temp_args in mat.get_nuclide_atom_densities().values():
             if len(temp_args) > 0:
+                coeff = []
+                temp_args = list(itertools.chain(*temp_args))[0]
+                temp_args = temp_args[1:]
+                temp_args[0] = density * 1.0e24
+                coeff.append(temp_args)
+                #
+                #print(mat_id, nuclide, np.array(coeff[0]))
+                self.number.set_atom_density(mat_id, nuclide, np.array(coeff[0]), fet_deplete=self.fet_deplete)
+            else:
                 number = density * 1.0e24
                 self.number.set_atom_density(mat_id, nuclide, number)
-            else:
-                coeff.append(density * 1.0e24)
-                coeff.append(temp_args[0][1:])
-                self.number.set_atom_density(mat_id, nuclide, coeff, fet=True)
 
     def _set_number_from_results(self, mat, prev_res):
         """Extracts material nuclides and number densities.
@@ -485,6 +493,7 @@ class Operator(TransportOperator):
             self.geometry.export_to_xml()
             self.settings.export_to_xml()
             self._generate_materials_xml()
+            
 
         # Initialize OpenMC library
         comm.barrier()
@@ -493,7 +502,9 @@ class Operator(TransportOperator):
         # Generate tallies in memory
         materials = [openmc.lib.materials[int(i)]
                      for i in self.burnable_mats]
-        self._rate_helper.generate_tallies(materials, self.chain.reactions)
+        # FETs 
+        self._rate_helper.generate_tallies(materials, self.chain.reactions, 
+                                           fet_deplete=self.fet_deplete)
         self._energy_helper.prepare(
             self.chain.nuclides, self.reaction_rates.index_nuc, materials)
         # Tell fission yield helper what materials this process is
@@ -502,7 +513,7 @@ class Operator(TransportOperator):
             materials, tuple(sorted(self._mat_index_map.values())))
 
         # Return number density vector
-        return list(self.number.get_mat_slice(np.s_[:]))
+        return list(self.number.get_mat_slice(np.s_[:], fet_deplete=self.fet_deplete)) # FETs 
 
     def finalize(self):
         """Finalize a depletion simulation and release resources."""
@@ -627,9 +638,14 @@ class Operator(TransportOperator):
             Eigenvalue and reaction rates resulting from transport operator
 
         """
-        
-        mp = zer.num_poly(self.fet_order)
-        
+        # FETs 
+        mp = 1
+        if self.fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #
         rates = self.reaction_rates
         rates.fill(0.0)
 

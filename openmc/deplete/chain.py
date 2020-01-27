@@ -424,7 +424,7 @@ class Chain(object):
         return out
 
     
-    def form_matrix(self, rates, fission_yields=None):
+    def form_matrix(self, rates, fission_yields=None, fet_deplete=None):
         """Forms depletion matrix.
 
         Parameters
@@ -446,9 +446,14 @@ class Chain(object):
         --------
         :meth:`get_default_fission_yields`
         """
-        
-        np = rates.n_poly
-        
+        #FETs 
+        np = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                np = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                np = zer.num_poly1d(fet_deplete['order'])
+        #
         matrix = defaultdict(float)
         reactions = set()
 
@@ -477,46 +482,81 @@ class Chain(object):
                             # FETs
                             for p in range(np):
                                 matrix[k * np + p, i * np + p] += branch_val
-
-            if nuc.name in rates.index_nuc:
-                # Extract all reactions for this nuclide in this cell
-                nuc_ind = rates.index_nuc[nuc.name]
-                nuc_rates = rates[nuc_ind, :, :] #FETs
-
-                for r_type, target, _, br in nuc.reactions:
-                    # Extract reaction index, and then final reaction rate
-                    r_id = rates.index_rx[r_type]
-                    path_rate = nuc_rates[r_id, :] #FETs
-
-                    # Loss term -- make sure we only count loss once for
-                    # reactions with branching ratios
-                    if r_type not in reactions:
-                        reactions.add(r_type)
-                        if path_rate != 0.0:
-                            for p in range(np):
-                                for pp in range(np):
-                                    weight_rate = zer.form_b_matrix(p, pp, path_rate)
-                                    matrix[i * np + pp, i * np + p] -= weight_rate
-                                    #matrix[i, i] -= path_rate
-
-                                    # Gain term; allow for total annihilation for debug purposes
-                                    if target != 'Nothing':
-                                        if r_type != 'fission':
-                                            if path_rate != 0.0:
-                                                k = self.nuclide_dict[target]
-                                                #matrix[k, i] += path_rate * br
-                                                matrix[k * np + pp, i * np + p] += weight_rate * br # FETs
-                                        else:
-                                            for product, y in fission_yields[nuc.name].items():
-                                                yield_val = y * path_rate
-                                                if yield_val != 0.0:
-                                                    k = self.nuclide_dict[product]
-                                                    matrix[k, i] += yield_val
-                                                    matrix[k * np + pp, i * np + p] += weight_rate * yield_val #FETs
-                                            
-
-                # Clear set of reactions
-                reactions.clear()
+                        
+            if fet_deplete is None:
+                if nuc.name in rates.index_nuc:
+                    # Extract all reactions for this nuclide in this cell
+                    nuc_ind = rates.index_nuc[nuc.name]
+                    nuc_rates = rates[nuc_ind, :]
+                    
+                    for r_type, target, _, br in nuc.reactions:
+                        # Extract reaction index, and then final reaction rate
+                        r_id = rates.index_rx[r_type]
+                        path_rate = nuc_rates[r_id]
+                    
+                        # Loss term -- make sure we only count loss once for
+                        # reactions with branching ratios
+                        if r_type not in reactions:
+                            reactions.add(r_type)
+                            if path_rate != 0.0:
+                                matrix[i, i] -= path_rate
+                    
+                        # Gain term; allow for total annihilation for debug purposes
+                        if target != 'Nothing':
+                            if r_type != 'fission':
+                                if path_rate != 0.0:
+                                    k = self.nuclide_dict[target]
+                                    matrix[k, i] += path_rate * br
+                            else:
+                                for product, y in fission_yields[nuc.name].items():
+                                    yield_val = y * path_rate
+                                    if yield_val != 0.0:
+                                        k = self.nuclide_dict[product]
+                                        matrix[k, i] += yield_val
+                    
+                    # Clear set of reactions
+                    reactions.clear()
+            else:
+                #FETs 
+                if nuc.name in rates.index_nuc:
+                    # Extract all reactions for this nuclide in this cell
+                    nuc_ind = rates.index_nuc[nuc.name]
+                    nuc_rates = rates[nuc_ind, :, :] #FETs
+                
+                    for r_type, target, _, br in nuc.reactions:
+                        # Extract reaction index, and then final reaction rate
+                        r_id = rates.index_rx[r_type]
+                        path_rate = nuc_rates[r_id, :] #FETs
+                
+                        # Loss term -- make sure we only count loss once for
+                        # reactions with branching ratios
+                        if r_type not in reactions:
+                            reactions.add(r_type)
+                            if path_rate != 0.0:
+                                for p in range(np):
+                                    for pp in range(np):
+                                        weight_rate = zer.form_b_matrix(p, pp, path_rate)
+                                        matrix[i * np + pp, i * np + p] -= weight_rate
+                                        #matrix[i, i] -= path_rate
+                
+                                        # Gain term; allow for total annihilation for debug purposes
+                                        if target != 'Nothing':
+                                            if r_type != 'fission':
+                                                if path_rate != 0.0:
+                                                    k = self.nuclide_dict[target]
+                                                    #matrix[k, i] += path_rate * br
+                                                    matrix[k * np + pp, i * np + p] += weight_rate * br # FETs
+                                            else:
+                                                for product, y in fission_yields[nuc.name].items():
+                                                    yield_val = y * path_rate
+                                                    if yield_val != 0.0:
+                                                        k = self.nuclide_dict[product]
+                                                        matrix[k, i] += yield_val
+                                                        matrix[k * np + pp, i * np + p] += weight_rate * yield_val #FETs
+                                                
+                
+                    # Clear set of reactions
+                    reactions.clear()
 
         # Use DOK matrix as intermediate representation, then convert to CSR and return
         n = len(self)

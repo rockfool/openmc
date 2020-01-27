@@ -12,7 +12,7 @@ from numpy import dot, zeros, newaxis
 from . import comm
 from openmc.checkvalue import check_type, check_greater_than
 from openmc.lib import (
-    Tally, MaterialFilter, EnergyFilter, EnergyFunctionFilter, ZernikeFilter)
+    Tally, MaterialFilter, EnergyFilter, EnergyFunctionFilter, ZernikeFilter, ZernikeRadialFilter)
 from .abc import (
     ReactionRateHelper, EnergyHelper, FissionYieldHelper,
     TalliedFissionYieldHelper)
@@ -45,7 +45,7 @@ class DirectReactionRateHelper(ReactionRateHelper):
         All nuclides with desired reaction rates.
     """
 
-    def generate_tallies(self, materials, scores, fet_order=None, fet_radius=None):
+    def generate_tallies(self, materials, scores, fet_deplete=None):
         """Produce one-group reaction rate tally
 
         Uses the :mod:`openmc.lib` to generate a tally
@@ -61,15 +61,26 @@ class DirectReactionRateHelper(ReactionRateHelper):
             ``"(n, gamma)"``, needed for the reaction rate tally.
         """
         self._rate_tally = Tally()
-        self._rate_tally.writable = False 
+        self._rate_tally.writable = True 
         self._rate_tally.scores = scores
         self._rate_tally.filters = [MaterialFilter(materials)]
-        # fet 
-        if fet_order is not None and fet_radius is not None:
-            self._rate_tally.filters += [ZernikeFilter(order=fet_order, x=0.0, y=0.0, r=fet_radius)]
-        self._rate_tally.export_to_xml() # FETs    
+        
+        
+        # FETs 
+        if fet_deplete is not None:
+            if fet_deplete['name'] == 'zernike':
+                #
+                zer_filter = ZernikeFilter()
+                zer_filter.order = fet_deplete['order']
+                zer_filter.radius = fet_deplete['radius']
+                #
+                self._rate_tally.filters += [zer_filter]
+            elif fet_deplete['name'] == 'zernike1d':
+                self._rate_tally.filters += [ZernikeRadialFilter(order=fet_deplete['order'],
+                                             x=0.0, y=0.0, r=fet_deplete['radius'])]
+                    
 
-    def get_material_rates(self, mat_id, nuc_index, react_index, num_coeffs=None):
+    def get_material_rates(self, mat_id, nuc_index, react_index):
         """Return an array of reaction rates for a material
 
         Parameters
@@ -88,17 +99,14 @@ class DirectReactionRateHelper(ReactionRateHelper):
             Array with shape ``(n_nuclides, n_rxns, n_coeffs)`` with the
             reaction rates in this material
         """
-        #FETs
-        if num_coeffs is not None:
-            self.n_coeffs = num_coeffs
-        else:
-            self.n_coeffs = 1
-        #    
+        
+        #FETs     
         self._results_cache.fill(0.0)
-        full_tally_res = self._rate_tally.results[mat_id, :, 1:num_coeffs] # need to confirm
+        
+        full_tally_res = self._rate_tally.results[mat_id, :, 1] # 
         for i_tally, (i_nuc, i_react) in enumerate(
                 product(nuc_index, react_index)):
-            self._results_cache[i_nuc, i_react] = full_tally_res[i_tally,:]
+            self._results_cache[i_nuc, i_react] = full_tally_res[i_tally]
 
         return self._results_cache
 
@@ -207,7 +215,7 @@ class EnergyScoreHelper(EnergyHelper):
 
         """
         self._tally = Tally()
-        self._tally.writable = False 
+        self._tally.writable = True 
         self._tally.scores = [self.score]
 
     def reset(self):
@@ -584,7 +592,7 @@ class AveragedFissionYieldHelper(TalliedFissionYieldHelper):
         func_filter = EnergyFunctionFilter()
         func_filter.set_data((0, self._upper_energy), (0, self._upper_energy))
         weighted_tally = Tally()
-        weighted_tally.writable = False 
+        weighted_tally.writable = True 
         weighted_tally.scores = ['fission']
         weighted_tally.filters = filters + [func_filter]
         self._weighted_tally = weighted_tally

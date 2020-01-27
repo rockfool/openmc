@@ -62,9 +62,9 @@ class ReactionRates(np.ndarray):
         if fet_deplete is not None: 
             if fet_deplete['name']== 'zernike':
                 mp = zer.num_poly(fet_deplete['order'])
-            elif fet['name']=='zernike1d':
+            elif fet_deplete['name']=='zernike1d':
                 mp = zer.num_poly1d(fet_deplete['order'])
-            shape = (len(local_mats), len(nuclides), len(reactions), mp)  
+            shape = (len(local_mats), len(nuclides), len(reactions)*mp)  
         else:
             shape = (len(local_mats), len(nuclides), len(reactions))
         obj = super().__new__(cls, shape)
@@ -75,7 +75,7 @@ class ReactionRates(np.ndarray):
             obj.index_mat = local_mats
             obj.index_nuc = nuclides
             obj.index_rx = reactions
-            obj.n_poly = mp # FETs
+            
         # Else, assumes that reaction rates are ordered the same way as
         # the lists of local_mats, nuclides and reactions (or keys if these
         # are dictionnaries)
@@ -83,7 +83,7 @@ class ReactionRates(np.ndarray):
             obj.index_mat = {mat: i for i, mat in enumerate(local_mats)}
             obj.index_nuc = {nuc: i for i, nuc in enumerate(nuclides)}
             obj.index_rx = {rx: i for i, rx in enumerate(reactions)}
-            obj.n_poly = mp # FETs 
+             
             
         return obj
 
@@ -93,7 +93,7 @@ class ReactionRates(np.ndarray):
         self.index_mat = getattr(obj, 'index_mat', None)
         self.index_nuc = getattr(obj, 'index_nuc', None)
         self.index_rx = getattr(obj, 'index_rx', None)
-        self.n_poly = getattr(obj, 'n_poly', 1) # FETs 
+         
         
     # Reaction rates are distributed to other processes via multiprocessing,
     # which entails pickling the objects. In order to preserve the custom
@@ -102,15 +102,14 @@ class ReactionRates(np.ndarray):
 
     def __reduce__(self):
         state = super().__reduce__()
-        new_state = state[2] + (self.index_mat, self.index_nuc, self.index_rx, self.n_poly) # FETs 
+        new_state = state[2] + (self.index_mat, self.index_nuc, self.index_rx) # FETs 
         return (state[0], state[1], new_state)
 
     def __setstate__(self, state):
-        self.index_mat = state[-4] # FETs
-        self.index_nuc = state[-3]
-        self.index_rx = state[-2]
-        self.n_poly = state[-1]
-        super().__setstate__(state[0:-4])
+        self.index_mat = state[-3] 
+        self.index_nuc = state[-2]
+        self.index_rx = state[-1]
+        super().__setstate__(state[0:-3])
 
     @property
     def n_mat(self):
@@ -145,9 +144,9 @@ class ReactionRates(np.ndarray):
         mat = self.index_mat[mat]
         nuc = self.index_nuc[nuc]
         rx = self.index_rx[rx]
-        return self[mat, nuc, rx, :]  # FETs 
+        return self[mat, nuc, rx]  # FETs 
 
-    def set(self, mat, nuc, rx, fet):
+    def set(self, mat, nuc, rx, value):
         """Set reaction rate by material/nuclide/reaction
 
         Parameters
@@ -165,7 +164,7 @@ class ReactionRates(np.ndarray):
         mat = self.index_mat[mat]
         nuc = self.index_nuc[nuc]
         rx = self.index_rx[rx]
-        self[mat, nuc, rx, :] = fet[:] # FETs 
+        self[mat, nuc, rx] = value 
     
     
     
