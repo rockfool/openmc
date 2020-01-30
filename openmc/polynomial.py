@@ -78,7 +78,7 @@ class ZernikeRadial(Polynomial):
             return [np.sum(self._norm_coef * lib.calc_zn_rad(self.order, r_i/self.radius))
                     for r_i in r]
         else:
-            return np.sum(self._norm_coef * lib.calc_zn_rad(self.order, r))
+            return np.sum(self._norm_coef * lib.calc_zn_rad(self.order, r/self.radius))
 
 class Zernike(Polynomial):
     """Create Zernike polynomials given coefficients and domain.
