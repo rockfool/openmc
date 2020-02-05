@@ -201,6 +201,8 @@ class AtomNumber(object):
             Array of densities to set in [atom/cm^3]
 
         """
+        from collections import Iterable 
+        
         if isinstance(mat, str):
             mat = self.index_mat[mat]
         if isinstance(nuc, str):
@@ -212,9 +214,12 @@ class AtomNumber(object):
                 mp = zer.num_poly(fet_deplete['order'])
             elif fet['name']=='zernike1d':
                 mp = zer.num_poly1d(fet_deplete['order'])    
-            for i in range(mp):
-                self[mat, nuc * mp + i] = val[i]
-            self[mat, nuc * mp] *= self.volume[mat]
+            if isinstance(val, Iterable):
+                for i in range(mp):
+                    self[mat, nuc * mp + i] = val[i]
+                self[mat, nuc * mp] *= self.volume[mat]    
+            else: 
+                self[mat, nuc * mp] = val * self.volume[mat]
         #    
         else:
             self[mat, nuc] = val * self.volume[mat]

@@ -276,7 +276,7 @@ class Operator(TransportOperator):
         openmc.reset_auto_ids()
 
         # Update status
-        print(vec) # FETs testing 
+        #print(vec) # FETs testing 
         self.number.set_density(vec, self.fet_deplete) # FETs 
         
         # Update material compositions and tally nuclides
@@ -400,15 +400,17 @@ class Operator(TransportOperator):
         self.number = AtomNumber(local_mats, nuclides, volume, len(self.chain), fet_deplete=fet_deplete)
 
         if self.dilute_initial != 0.0:
+            #print(self.dilute_initial) #FETs 
+            #print(self._burnable_nucs)
             for nuc in self._burnable_nucs:
-                self.number.set_atom_density(np.s_[:], nuc, self.dilute_initial)
+                self.number.set_atom_density(np.s_[:], nuc, self.dilute_initial, fet_deplete=fet_deplete)
 
         # Now extract and store the number densities
         # From the geometry if no previous depletion results
         if prev_res is None:
             for mat in self.geometry.get_all_materials().values():
                 if str(mat.id) in local_mats:
-                    self._set_number_from_mat(mat)
+                    self._set_number_from_mat(mat) 
 
         # Else from previous depletion results
         else:
