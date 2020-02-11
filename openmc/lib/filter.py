@@ -105,6 +105,16 @@ _dll.openmc_zernike_filter_set_order.argtypes = [c_int32, c_int]
 _dll.openmc_zernike_filter_set_order.restype = c_int
 _dll.openmc_zernike_filter_set_order.errcheck = _error_handler
 _dll.tally_filters_size.restype = c_size_t
+#FETs 
+_dll.openmc_zernike_filter_set_params.argtypes = [
+    c_int32, POINTER(c_double), POINTER(c_double), POINTER(c_double)]
+_dll.openmc_zernike_filter_set_params.restype = c_int
+_dll.openmc_zernike_filter_set_params.errcheck = _error_handler
+_dll.openmc_zernike_filter_get_params.argtypes = [
+    c_int32, POINTER(c_double), POINTER(c_double), POINTER(c_double)]
+_dll.openmc_zernike_filter_get_params.restype = c_int
+_dll.openmc_zernike_filter_get_params.errcheck = _error_handler
+#
 
 
 class Filter(_FortranObjectWithID):
@@ -407,6 +417,19 @@ class ZernikeFilter(Filter):
     @order.setter
     def order(self, order):
         _dll.openmc_zernike_filter_set_order(self._index, order)
+    
+    @property
+    def params(self):
+        temp_loc = {}
+        temp_loc['x'] = POINTER(c_double)()
+        temp_loc['y'] = POINTER(c_double)()
+        temp_loc['r'] = POINTER(c_double)()
+        _dll.openmc_zernike_filter_get_params(self._index, temp_loc['x'], temp_loc['y'], temp_loc['r'])
+        return temp_loc
+        
+    @params.setter
+    def params(self, loc):
+        _dll.openmc_zernike_filter_set_params(self._index, loc['x'], loc['y'], loc['r'])
 
 
 class ZernikeRadialFilter(ZernikeFilter):

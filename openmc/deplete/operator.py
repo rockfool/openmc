@@ -280,7 +280,7 @@ class Operator(TransportOperator):
         self.number.set_density(vec, self.fet_deplete) # FETs 
         
         # Update material compositions and tally nuclides
-        self._update_materials()
+        self._update_materials() # FETs 
         nuclides = self._get_tally_nuclides() # FETs no change
         self._rate_helper.nuclides = nuclides # FETs no change
         self._energy_helper.nuclides = nuclides # FETs no change
@@ -291,7 +291,7 @@ class Operator(TransportOperator):
         openmc.lib.run()
 
         # Extract results
-        op_result = self._unpack_tallies_and_normalize(power)
+        op_result = self._unpack_tallies_and_normalize(power, fet_deplete=self.fet_deplete)
 
         return copy.deepcopy(op_result)
 
@@ -409,6 +409,7 @@ class Operator(TransportOperator):
         # From the geometry if no previous depletion results
         if prev_res is None:
             for mat in self.geometry.get_all_materials().values():
+                print(local_mats)
                 if str(mat.id) in local_mats:
                     self._set_number_from_mat(mat) 
 
@@ -523,7 +524,9 @@ class Operator(TransportOperator):
 
     def _update_materials(self):
         """Updates material compositions in OpenMC on all processes."""
-
+        
+        from collections import Iterable # FETs 
+        
         for rank in range(comm.size):
             number_i = comm.bcast(self.number, root=rank)
 
@@ -532,26 +535,48 @@ class Operator(TransportOperator):
                 densities = []
                 for nuc in number_i.nuclides:
                     if nuc in self.nuclides_with_data:
-                        val = 1.0e-24 * number_i.get_atom_density(mat, nuc)
-
-                        # If nuclide is zero, do not add to the problem.
-                        if val > 0.0:
-                            if self.round_number:
-                                val_magnitude = np.floor(np.log10(val))
-                                val_scaled = val / 10**val_magnitude
-                                val_round = round(val_scaled, 8)
-
-                                val = val_round * 10**val_magnitude
-
-                            nuclides.append(nuc)
-                            densities.append(val)
-                        else:
-                            # Only output warnings if values are significantly
-                            # negative. CRAM does not guarantee positive values.
-                            if val < -1.0e-21:
-                                print("WARNING: nuclide ", nuc, " in material ", mat,
-                                      " is negative (density = ", val, " at/barn-cm)")
-                            number_i[mat, nuc] = 0.0
+                        
+                        val = number_i.get_atom_density(mat, nuc, fet_deplete=self.fet_deplete) #FETs 
+                        
+                        if not isinstance(val, Iterable):
+                            val *= 1.0e-24  
+                            # If nuclide is zero, do not add to the problem.
+                            if val > 0.0:
+                                if self.round_number:
+                                    val_magnitude = np.floor(np.log10(val))
+                                    val_scaled = val / 10**val_magnitude
+                                    val_round = round(val_scaled, 8)
+                            
+                                    val = val_round * 10**val_magnitude
+                            
+                                nuclides.append(nuc)
+                                densities.append(val)
+                            else:
+                                # Only output warnings if values are significantly
+                                # negative. CRAM does not guarantee positive values.
+                                if val < -1.0e-21:
+                                    print("WARNING: nuclide ", nuc, " in material ", mat,
+                                          " is negative (density = ", val, " at/barn-cm)")
+                                number_i[mat, nuc] = 0.0
+                        else: #FETs 
+                            val[0] *= 1.0e-24
+                            if val[0] > 0.0:
+                                if self.round_number:
+                                    val_magnitude = np.floor(np.log10(val[0]))
+                                    val_scaled = val[0] / 10**val_magnitude
+                                    val_round = round(val_scaled, 8)
+                            
+                                    val[0] = val_round * 10**val_magnitude
+                            
+                                nuclides.append(nuc)
+                                densities.append(val[0])
+                            else:
+                                # Only output warnings if values are significantly
+                                # negative. CRAM does not guarantee positive values.
+                                if val[0] < -1.0e-21:
+                                    print("WARNING: nuclide ", nuc, " in material ", mat,
+                                          " is negative (density = ", val[0], " at/barn-cm)")
+                                number_i[mat, nuc] = 0.0
 
                 # Update densities on C API side
                 mat_internal = openmc.lib.materials[int(mat)]
@@ -621,7 +646,7 @@ class Operator(TransportOperator):
         nuc_list = comm.bcast(nuc_list)
         return [nuc for nuc in nuc_list if nuc in self.chain]
 
-    def _unpack_tallies_and_normalize(self, power):
+    def _unpack_tallies_and_normalize(self, power, fet_deplete):
         """Unpack tallies from OpenMC and return an operator result
 
         This method uses OpenMC's C API bindings to determine the k-effective
@@ -642,7 +667,7 @@ class Operator(TransportOperator):
         """
         # FETs 
         mp = 1
-        if self.fet_deplete is not None:
+        if fet_deplete is not None:
             if fet_deplete['name']== 'zernike':
                 mp = zer.num_poly(fet_deplete['order'])
             elif fet['name']=='zernike1d':

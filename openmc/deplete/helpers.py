@@ -64,20 +64,23 @@ class DirectReactionRateHelper(ReactionRateHelper):
         self._rate_tally.writable = True 
         self._rate_tally.scores = scores
         self._rate_tally.filters = [MaterialFilter(materials)]
-        
-        
         # FETs 
         if fet_deplete is not None:
+            temp_loc = {}
+            temp_loc['x'] = 0.0
+            temp_loc['y'] = 0.0
+            temp_loc['r'] = fet_deplete['radius']
+            #
             if fet_deplete['name'] == 'zernike':
-                #
                 zer_filter = ZernikeFilter()
                 zer_filter.order = fet_deplete['order']
-                zer_filter.radius = fet_deplete['radius']
-                #
+                zer_filter.params = temp_loc
                 self._rate_tally.filters += [zer_filter]
             elif fet_deplete['name'] == 'zernike1d':
-                self._rate_tally.filters += [ZernikeRadialFilter(order=fet_deplete['order'],
-                                             x=0.0, y=0.0, r=fet_deplete['radius'])]
+                zer1d_filter = ZernikeRadialFilter()
+                zer1d_filter.order = fet_deplete['order']
+                zer1d_filter.params = temp_loc
+                self._rate_tally.filters += [zer1d_filter]
                     
 
     def get_material_rates(self, mat_id, nuc_index, react_index):
