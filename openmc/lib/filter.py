@@ -429,7 +429,13 @@ class ZernikeFilter(Filter):
         
     @params.setter
     def params(self, loc):
-        _dll.openmc_zernike_filter_set_params(self._index, loc['x'], loc['y'], loc['r'])
+        x_array = np.asarray(loc['x'])
+        y_array = np.asarray(loc['y'])
+        r_array = np.asarray(loc['r'])
+        x_array = x_array.ctypes.data_as(POINTER(c_double))
+        y_array = y_array.ctypes.data_as(POINTER(c_double))
+        r_array = r_array.ctypes.data_as(POINTER(c_double))
+        _dll.openmc_zernike_filter_set_params(self._index, x_array, y_array, r_array)
 
 
 class ZernikeRadialFilter(ZernikeFilter):

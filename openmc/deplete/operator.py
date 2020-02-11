@@ -27,7 +27,6 @@ from . import comm
 from .abc import TransportOperator, OperatorResult
 from .atom_number import AtomNumber
 from .reaction_rates import ReactionRates
-from .reaction_rates_fet import ReactionRatesFet
 from .results_list import ResultsList
 from .helpers import (
     DirectReactionRateHelper, ChainFissionHelper, ConstantFissionYieldHelper,
@@ -237,7 +236,8 @@ class Operator(TransportOperator):
         
         # Get classes to assist working with tallies
         self._rate_helper = DirectReactionRateHelper(
-            self.reaction_rates.n_nuc, self.reaction_rates.n_react)
+            self.reaction_rates.n_nuc, self.reaction_rates.n_react, 
+            fet_deplete=self.fet_deplete) #FETs
         if energy_mode == "fission-q":
             self._energy_helper = ChainFissionHelper()
         else:
@@ -646,7 +646,7 @@ class Operator(TransportOperator):
         nuc_list = comm.bcast(nuc_list)
         return [nuc for nuc in nuc_list if nuc in self.chain]
 
-    def _unpack_tallies_and_normalize(self, power, fet_deplete):
+    def _unpack_tallies_and_normalize(self, power, fet_deplete=None):
         """Unpack tallies from OpenMC and return an operator result
 
         This method uses OpenMC's C API bindings to determine the k-effective
@@ -698,7 +698,7 @@ class Operator(TransportOperator):
 
         # Create arrays to store fission Q values, reaction rates, and nuclide
         # numbers, zeroed out in material iteration
-        number = np.empty(rates.n_nuc)
+        number = np.empty(rates.n_nuc * mp) #FETs 
 
         fission_ind = rates.index_rx["fission"]
 
@@ -712,19 +712,24 @@ class Operator(TransportOperator):
 
             # Get new number densities
             for nuc, i_nuc_results in zip(nuclides, nuc_ind):
-                number[i_nuc_results] = self.number[mat, nuc]
+                #FETs
+                i_nuc = self.number.index_nuc[nuc]
+                #print(nuclides, nuc_ind, i_nuc)
+                for i in range(mp):
+                    number[i_nuc_results * mp + i] = self.number[mat, i_nuc * mp + i] 
+                # number[i_nuc_results] = self.number[mat, nuc] #FETs 
 
             tally_rates = self._rate_helper.get_material_rates(
-                mat_index, nuc_ind, react_ind)
+                mat_index, nuc_ind, react_ind, fet_deplete=self.fet_deplete) #FETs 
 
             # Compute fission yields for this material
-            fission_yields.append(self._yield_helper.weighted_yields(i))
+            fission_yields.append(self._yield_helper.weighted_yields(i)) #FETs no change
 
             # Accumulate energy from fission
-            self._energy_helper.update(tally_rates[:, fission_ind], mat_index)
+            self._energy_helper.update(tally_rates[:, fission_ind], mat_index) #FETs no change
 
             # Divide by total number and store
-            rates[i] = self._rate_helper.divide_by_adens(number)
+            rates[i] = self._rate_helper.divide_by_adens(number) #FETs 
 
         # Reduce energy produced from all processes
         # J / s / source neutron

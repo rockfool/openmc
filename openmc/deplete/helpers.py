@@ -16,6 +16,8 @@ from openmc.lib import (
 from .abc import (
     ReactionRateHelper, EnergyHelper, FissionYieldHelper,
     TalliedFissionYieldHelper)
+# FETs 
+from openmc import zernike as zer     
 
 __all__ = (
     "DirectReactionRateHelper", "ChainFissionHelper",
@@ -83,7 +85,7 @@ class DirectReactionRateHelper(ReactionRateHelper):
                 self._rate_tally.filters += [zer1d_filter]
                     
 
-    def get_material_rates(self, mat_id, nuc_index, react_index):
+    def get_material_rates(self, mat_id, nuc_index, react_index, fet_deplete=None):
         """Return an array of reaction rates for a material
 
         Parameters
@@ -99,14 +101,22 @@ class DirectReactionRateHelper(ReactionRateHelper):
         Returns
         -------
         rates : numpy.ndarray
-            Array with shape ``(n_nuclides, n_rxns, n_coeffs)`` with the
+            Array with shape ``(n_nuclides, n_rxns * n_coeffs)`` with the
             reaction rates in this material
         """
         
-        #FETs     
+        #FETs    
+        mp = 1 
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #              
         self._results_cache.fill(0.0)
         
         full_tally_res = self._rate_tally.results[mat_id, :, 1] # 
+        print(self._rate_tally.results[mat_id, :, :])
         for i_tally, (i_nuc, i_react) in enumerate(
                 product(nuc_index, react_index)):
             self._results_cache[i_nuc, i_react] = full_tally_res[i_tally]

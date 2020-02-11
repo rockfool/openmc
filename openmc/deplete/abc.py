@@ -23,6 +23,8 @@ from openmc.checkvalue import check_type, check_greater_than
 from .results import Results
 from .chain import Chain
 from .results_list import ResultsList
+#FETs 
+from openmc import zernike as zer
 
 
 __all__ = [
@@ -235,11 +237,18 @@ class ReactionRateHelper(ABC):
     nuclides : list of str
         All nuclides with desired reaction rates.
     """
-
-    def __init__(self, n_nucs, n_react): #FETs 
+    def __init__(self, n_nucs, n_react, fet_deplete=None): #FETs 
+        #FETs
+        mp = 1
+        if fet_deplete is not None: 
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet_deplete['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #
         self._nuclides = None
         self._rate_tally = None
-        self._results_cache = empty((n_nucs, n_react))
+        self._results_cache = empty((n_nucs, n_react * mp)) # FETs 
 
     @abstractmethod
     def generate_tallies(self, materials, scores):
