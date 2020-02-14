@@ -748,7 +748,20 @@ class Integrator(ABC):
             return 0.0, 0
         return (self.operator.prev_res[-1].time[-1],
                 len(self.operator.prev_res) - 1)
-
+    
+    def _export_to_pdf(self, stage):
+        number = self.operator.number
+        fet_deplete = self.operator.fet_deplete
+        order = fet_deplete['order']
+        radius = fet_deplete['radius']
+        for mat in number.materials:
+            for nuc in number.nuclides:
+                coeff = number.get_atom_density(mat, nuc, fet_deplete=fet_deplete)
+                filename = str(stage) + "-" + str(mat) + "-" + str(nuc) + ".pdf"
+                zer_file = zer.ZernikePolynomial(order, coeff, radius, sqrt_normed=False)
+                zer_file.plot_disk(20, 32, filename)
+        #
+    
     def integrate(self):
         """Perform the entire depletion process across all steps"""
         with self.operator as conc:
@@ -770,7 +783,10 @@ class Integrator(ABC):
 
                 Results.save(self.operator, conc_list, res_list, [t, t + dt],
                              p, self._i_res + i, proc_time, fet_deplete=self.operator.fet_deplete) #FETs 
-
+                
+                # FETs Plot some results into pdfs 
+                self._export_to_pdf(i)
+                
                 t += dt
 
             # Final simulation

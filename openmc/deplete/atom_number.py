@@ -291,3 +291,4 @@ class AtomNumber(object):
         """
         for i, density_slice in enumerate(total_density):
             self.set_mat_slice(i, density_slice, fet_deplete)
+    

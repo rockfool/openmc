@@ -538,6 +538,8 @@ class Operator(TransportOperator):
                         
                         val = number_i.get_atom_density(mat, nuc, fet_deplete=self.fet_deplete) #FETs 
                         
+                        val = self._check_negative(val, fet_deplete=self.fet_deplete) #FETs 
+                        
                         if not isinstance(val, Iterable):
                             val *= 1.0e-24  
                             # If nuclide is zero, do not add to the problem.
@@ -584,7 +586,25 @@ class Operator(TransportOperator):
 
                 #TODO Update densities on the Python side, otherwise the
                 # summary.h5 file contains densities at the first time step
-
+    
+    def _check_negative(self, val,  fet_deplete=None):
+        """
+        Check the nagative of val and force it to positive 
+        """
+        mp = 1
+        if fet_deplete is not None:
+            order = fet_deplete['order']
+            radius = fet_deplete['radius']
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #
+        fet = zer.ZernikePolynomial(order, val, radius, sqrt_normed=False)
+        fet.force_positive()
+        return fet.coeffs
+    
+    
     def _generate_materials_xml(self):
         """Creates materials.xml from self.number.
 

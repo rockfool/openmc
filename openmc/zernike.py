@@ -34,6 +34,13 @@ def zern_to_ind(n,m):
     ind += (m + n) // 2
     return int(ind)
 
+def form_b_matrix(p, pp, rate):
+    # Yields the sum
+    # ret = sum_r Int[P_p * P_pp * P_r * rate_r] / Int[P_pp^2]
+    order = rate.size
+    v1 = b_matrix[p, pp, 0:order]
+    return np.dot(v1, rate) / c_matrix[pp]
+
 def flat_zernike(val, order, radius):
     # initialize zernike polynomial 
     n = num_poly(order)
