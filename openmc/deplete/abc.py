@@ -279,7 +279,7 @@ class ReactionRateHelper(ABC):
             Ordering of reactions
         """
 
-    def divide_by_adens(self, number):
+    def divide_by_adens(self, number, fet_deplete=None):
         """Normalize reaction rates by number of nuclides
 
         Acts on the current material examined by
@@ -297,11 +297,19 @@ class ReactionRateHelper(ABC):
             Array of reactions rates of shape ``(n_nuclides, n_rxns)``
             normalized by the number of nuclides
         """
-
+        #FETs 
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+            number = number[::mp]
+        #       
         mask = nonzero(number)
         results = self._results_cache
-        for col in range(results.shape[1]):
-            results[mask, col] /= number[mask]
+        for col in range(results.shape[1] // mp): #FETs 
+            results[mask, col * mp] /= number[mask] #FETs 
         return results
 
 
@@ -761,14 +769,14 @@ class Integrator(ABC):
                 conc = conc_list.pop()
 
                 Results.save(self.operator, conc_list, res_list, [t, t + dt],
-                             p, self._i_res + i, proc_time)
+                             p, self._i_res + i, proc_time, fet_deplete=self.operator.fet_deplete) #FETs 
 
                 t += dt
 
             # Final simulation
             res_list = [self.operator(conc, p)]
             Results.save(self.operator, [conc], res_list, [t, t],
-                         p, self._i_res + len(self), proc_time)
+                         p, self._i_res + len(self), proc_time, fet_deplete=self.operator.fet_deplete) #FETs 
             self.operator.write_bos_data(len(self) + self._i_res)
 
 

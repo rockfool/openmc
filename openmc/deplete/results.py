@@ -12,6 +12,8 @@ import h5py
 
 from . import comm, have_mpi, MPI
 from .reaction_rates import ReactionRates
+#FETs 
+from openmc import zernike as zer
 
 _VERSION_RESULTS = (1, 0)
 
@@ -131,7 +133,7 @@ class Results(object):
     def n_stages(self):
         return self.data.shape[0]
 
-    def allocate(self, volume, nuc_list, burn_list, full_burn_list, stages):
+    def allocate(self, volume, nuc_list, burn_list, full_burn_list, stages, fet_deplete=None):
         """Allocates memory of Results.
 
         Parameters
@@ -148,13 +150,21 @@ class Results(object):
             Number of stages in simulation.
 
         """
+        #FETs
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #
         self.volume = copy.deepcopy(volume)
         self.nuc_to_ind = {nuc: i for i, nuc in enumerate(nuc_list)}
         self.mat_to_ind = {mat: i for i, mat in enumerate(burn_list)}
         self.mat_to_hdf5_ind = {mat: i for i, mat in enumerate(full_burn_list)}
-
+        
         # Create storage array
-        self.data = np.zeros((stages, self.n_mat, self.n_nuc))
+        self.data = np.zeros((stages, self.n_mat, self.n_nuc * mp)) # FETs 
 
     def distribute(self, local_materials, ranges):
         """Create a new object containing data for distributed materials
@@ -187,7 +197,7 @@ class Results(object):
         new.rates = [r[ranges] for r in self.rates]
         return new
 
-    def export_to_hdf5(self, filename, step):
+    def export_to_hdf5(self, filename, step, fet_deplete=None):
         """Export results to an HDF5 file
 
         Parameters
@@ -207,9 +217,9 @@ class Results(object):
         kwargs['mode'] = "w" if step == 0 else "a"
 
         with h5py.File(filename, **kwargs) as handle:
-            self._to_hdf5(handle, step)
+            self._to_hdf5(handle, step, fet_deplete=fet_deplete)
 
-    def _write_hdf5_metadata(self, handle):
+    def _write_hdf5_metadata(self, handle, fet_deplete=None):
         """Writes result metadata in HDF5 file
 
         Parameters
@@ -235,7 +245,6 @@ class Results(object):
         mat_list = sorted(self.mat_to_hdf5_ind, key=int)
         nuc_list = sorted(self.nuc_to_ind)
         rxn_list = sorted(self.rates[0].index_rx)
-
         n_mats = self.n_hdf5_mats
         n_nuc_number = len(nuc_list)
         n_nuc_rxn = len(self.rates[0].index_nuc)
@@ -264,15 +273,22 @@ class Results(object):
             rxn_single_group.attrs["index"] = self.rates[0].index_rx[rxn]
 
         # Construct array storage
-
-        handle.create_dataset("number", (1, n_stages, n_mats, n_nuc_number),
-                              maxshape=(None, n_stages, n_mats, n_nuc_number),
-                              chunks=(1, 1, n_mats, n_nuc_number),
+        # FETs 
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #
+        handle.create_dataset("number", (1, n_stages, n_mats, n_nuc_number * mp), #FETs
+                              maxshape=(None, n_stages, n_mats, n_nuc_number * mp), #FETs 
+                              chunks=(1, 1, n_mats, n_nuc_number * mp), #FETs 
                               dtype='float64')
 
-        handle.create_dataset("reaction rates", (1, n_stages, n_mats, n_nuc_rxn, n_rxn),
-                              maxshape=(None, n_stages, n_mats, n_nuc_rxn, n_rxn),
-                              chunks=(1, 1, n_mats, n_nuc_rxn, n_rxn),
+        handle.create_dataset("reaction rates", (1, n_stages, n_mats, n_nuc_rxn, n_rxn * mp), #FETs
+                              maxshape=(None, n_stages, n_mats, n_nuc_rxn, n_rxn * mp), #FETs 
+                              chunks=(1, 1, n_mats, n_nuc_rxn, n_rxn * mp), #FETs 
                               dtype='float64')
 
         handle.create_dataset("eigenvalues", (1, n_stages, 2),
@@ -287,7 +303,7 @@ class Results(object):
             "depletion time", (1,), maxshape=(None,),
             dtype="float64")
 
-    def _to_hdf5(self, handle, index):
+    def _to_hdf5(self, handle, index, fet_deplete=None):
         """Converts results object into an hdf5 object.
 
         Parameters
@@ -300,7 +316,7 @@ class Results(object):
         """
         if "/number" not in handle:
             comm.barrier()
-            self._write_hdf5_metadata(handle)
+            self._write_hdf5_metadata(handle, fet_deplete=fet_deplete)
 
         comm.barrier()
 
@@ -433,7 +449,7 @@ class Results(object):
         return results
 
     @staticmethod
-    def save(op, x, op_results, t, power, step_ind, proc_time=None):
+    def save(op, x, op_results, t, power, step_ind, proc_time=None, fet_deplete=None):
         """Creates and writes depletion results to disk
 
         Parameters
@@ -463,7 +479,7 @@ class Results(object):
 
         # Create results
         results = Results()
-        results.allocate(vol_dict, nuc_list, burn_list, full_burn_list, stages)
+        results.allocate(vol_dict, nuc_list, burn_list, full_burn_list, stages, fet_deplete=fet_deplete) #FETs 
 
         n_mat = len(burn_list)
 
@@ -479,7 +495,7 @@ class Results(object):
         if results.proc_time is not None:
             results.proc_time = comm.reduce(proc_time, op=MPI.SUM)
 
-        results.export_to_hdf5("depletion_results.h5", step_ind)
+        results.export_to_hdf5("depletion_results.h5", step_ind, fet_deplete)
 
     def transfer_volumes(self, geometry):
         """Transfers volumes from depletion results to geometry

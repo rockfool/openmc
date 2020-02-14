@@ -424,7 +424,7 @@ class Chain(object):
         return out
 
     
-    def form_matrix(self, rates, fission_yields=None, fet_deplete=None):
+    def form_matrix(self, rates, fission_yields=None, mp=None):
         """Forms depletion matrix.
 
         Parameters
@@ -448,11 +448,8 @@ class Chain(object):
         """
         #FETs 
         np = 1
-        if fet_deplete is not None:
-            if fet_deplete['name']== 'zernike':
-                np = zer.num_poly(fet_deplete['order'])
-            elif fet['name']=='zernike1d':
-                np = zer.num_poly1d(fet_deplete['order'])
+        if mp is not None:
+            np = mp 
         #
         matrix = defaultdict(float)
         reactions = set()
@@ -483,7 +480,7 @@ class Chain(object):
                             for p in range(np):
                                 matrix[k * np + p, i * np + p] += branch_val
                         
-            if fet_deplete is None:
+            if mp is None:
                 if nuc.name in rates.index_nuc:
                     # Extract all reactions for this nuclide in this cell
                     nuc_ind = rates.index_nuc[nuc.name]
@@ -521,12 +518,12 @@ class Chain(object):
                 if nuc.name in rates.index_nuc:
                     # Extract all reactions for this nuclide in this cell
                     nuc_ind = rates.index_nuc[nuc.name]
-                    nuc_rates = rates[nuc_ind, :, :] #FETs
+                    nuc_rates = rates[nuc_ind, :] #FETs
                 
                     for r_type, target, _, br in nuc.reactions:
                         # Extract reaction index, and then final reaction rate
                         r_id = rates.index_rx[r_type]
-                        path_rate = nuc_rates[r_id, :] #FETs
+                        path_rate = nuc_rates[r_id] #FETs
                 
                         # Loss term -- make sure we only count loss once for
                         # reactions with branching ratios
@@ -559,9 +556,10 @@ class Chain(object):
                     reactions.clear()
 
         # Use DOK matrix as intermediate representation, then convert to CSR and return
-        n = len(self)
+        n = len(self) * np #FETs  
         matrix_dok = sp.dok_matrix((n, n))
         dict.update(matrix_dok, matrix)
+        #print(n) #FETs testing 
         return matrix_dok.tocsr()
 
     def get_branch_ratios(self, reaction="(n,gamma)"):

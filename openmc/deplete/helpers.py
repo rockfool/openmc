@@ -115,12 +115,19 @@ class DirectReactionRateHelper(ReactionRateHelper):
         #              
         self._results_cache.fill(0.0)
         
-        full_tally_res = self._rate_tally.results[mat_id, :, 1] # 
-        print(self._rate_tally.results[mat_id, :, :])
+        full_tally_res = self._rate_tally.results[mat_id, :, 1]  
         for i_tally, (i_nuc, i_react) in enumerate(
                 product(nuc_index, react_index)):
             self._results_cache[i_nuc, i_react] = full_tally_res[i_tally]
-
+        #FETs 
+        if fet_deplete is not None:
+            for i in range(mp):
+                #print(self._rate_tally.results[i * mat_id, :, 1])
+                full_tally_res = self._rate_tally.results[mp * mat_id + i, :, 1] 
+                for i_tally, (i_nuc, i_react) in enumerate(
+                    product(nuc_index, react_index)):
+                    self._results_cache[i_nuc, i_react * mp + i] = full_tally_res[i_tally]
+        #print(self._results_cache) # testing for FETs 
         return self._results_cache
 
 

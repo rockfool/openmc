@@ -87,7 +87,7 @@ class PredictorIntegrator(Integrator):
             operator with predictor
 
         """
-        proc_time, conc_end = timed_deplete(self.chain, conc, rates, dt)
+        proc_time, conc_end = timed_deplete(self.chain, conc, rates, dt, fet_deplete=self.operator.fet_deplete) #FETs
         return proc_time, [conc_end], []
 
 

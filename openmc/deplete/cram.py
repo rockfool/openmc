@@ -14,13 +14,15 @@ import scipy.sparse.linalg as sla
 
 from openmc.checkvalue import check_type, check_length
 from .abc import DepSystemSolver
+# FETs 
+from openmc import zernike as zer
 
 __all__ = [
     "deplete", "timed_deplete", "CRAM16", "CRAM48",
     "Cram16Solver", "Cram48Solver", "IPFCramSolver"]
 
 
-def deplete(chain, x, rates, dt, matrix_func=None):
+def deplete(chain, x, rates, dt, matrix_func=None, fet_deplete=None): #FETs 
     """Deplete materials using given reaction rates for a specified time
 
     Parameters
@@ -54,9 +56,16 @@ def deplete(chain, x, rates, dt, matrix_func=None):
             "Number of material fission yield distributions {} is not equal "
             "to the number of compositions {}".format(len(fission_yields),
                 len(x)))
-
+    #
+    mp = 1
+    if fet_deplete is not None:
+        if fet_deplete['name']== 'zernike':
+            mp = zer.num_poly(fet_deplete['order'])
+        elif fet['name']=='zernike1d':
+            mp = zer.num_poly1d(fet_deplete['order'])
+    #
     if matrix_func is None:
-        matrices = map(chain.form_matrix, rates, fission_yields)
+        matrices = map(chain.form_matrix, rates, fission_yields, repeat(mp))
     else:
         matrices = map(matrix_func, repeat(chain), rates, fission_yields)
 

@@ -237,7 +237,7 @@ class Operator(TransportOperator):
         # Get classes to assist working with tallies
         self._rate_helper = DirectReactionRateHelper(
             self.reaction_rates.n_nuc, self.reaction_rates.n_react, 
-            fet_deplete=self.fet_deplete) #FETs
+            fet_deplete=self.fet_deplete) #FETs    
         if energy_mode == "fission-q":
             self._energy_helper = ChainFissionHelper()
         else:
@@ -281,7 +281,7 @@ class Operator(TransportOperator):
         
         # Update material compositions and tally nuclides
         self._update_materials() # FETs 
-        nuclides = self._get_tally_nuclides() # FETs no change
+        nuclides = self._get_tally_nuclides(fet_deplete=self.fet_deplete) # FETs 
         self._rate_helper.nuclides = nuclides # FETs no change
         self._energy_helper.nuclides = nuclides # FETs no change
         self._yield_helper.update_tally_nuclides(nuclides) #FETs no change
@@ -603,7 +603,7 @@ class Operator(TransportOperator):
 
         materials.export_to_xml()
 
-    def _get_tally_nuclides(self):
+    def _get_tally_nuclides(self, fet_deplete=None):
         """Determine nuclides that should be tallied for reaction rates.
 
         This method returns a list of all nuclides that have neutron data and
@@ -618,14 +618,28 @@ class Operator(TransportOperator):
             Tally nuclides
 
         """
+        #FETs
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        #
         nuc_set = set()
 
         # Create the set of all nuclides in the decay chain in materials marked
         # for burning in which the number density is greater than zero.
         for nuc in self.number.nuclides:
             if nuc in self.nuclides_with_data:
-                if np.sum(self.number[:, nuc]) > 0.0:
-                    nuc_set.add(nuc)
+                #FETs                 
+                if fet_deplete is None:
+                    if np.sum(self.number[:, nuc]) > 0.0:
+                        nuc_set.add(nuc)
+                else: #FETs
+                    i_nuc = self.number.index_nuc[nuc] 
+                    if np.sum(self.number[:, i_nuc * mp]) > 0.0:
+                        nuc_set.add(nuc)                
 
         # Communicate which nuclides have nonzeros to rank 0
         if comm.rank == 0:
@@ -715,8 +729,8 @@ class Operator(TransportOperator):
                 #FETs
                 i_nuc = self.number.index_nuc[nuc]
                 #print(nuclides, nuc_ind, i_nuc)
-                for i in range(mp):
-                    number[i_nuc_results * mp + i] = self.number[mat, i_nuc * mp + i] 
+                for j in range(mp):
+                    number[i_nuc_results * mp + j] = self.number[mat, i_nuc * mp + j] 
                 # number[i_nuc_results] = self.number[mat, nuc] #FETs 
 
             tally_rates = self._rate_helper.get_material_rates(
@@ -726,14 +740,15 @@ class Operator(TransportOperator):
             fission_yields.append(self._yield_helper.weighted_yields(i)) #FETs no change
 
             # Accumulate energy from fission
-            self._energy_helper.update(tally_rates[:, fission_ind], mat_index) #FETs no change
+            self._energy_helper.update(tally_rates[:, fission_ind * mp], mat_index) #FETs updated index
 
             # Divide by total number and store
-            rates[i] = self._rate_helper.divide_by_adens(number) #FETs 
+            rates[i] = self._rate_helper.divide_by_adens(number, fet_deplete=self.fet_deplete) #FETs 
 
         # Reduce energy produced from all processes
         # J / s / source neutron
         energy = comm.allreduce(self._energy_helper.energy)
+        print(energy)
 
         # Guard against divide by zero
         if energy == 0:
