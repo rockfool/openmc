@@ -760,7 +760,14 @@ class Integrator(ABC):
                 filename = str(stage) + "-" + str(mat) + "-" + str(nuc) + ".pdf"
                 zer_file = zer.ZernikePolynomial(order, coeff, radius, sqrt_normed=False)
                 zer_file.plot_disk(20, 32, filename)
-        #
+        # FETs 
+    
+    def _rename_materials_xml(self, stage):
+        import shutil
+        src = "materials.xml"
+        des = "materials_" + str(stage) + ".xml"
+        shutil.move(src, des)
+        # FETs 
     
     def integrate(self):
         """Perform the entire depletion process across all steps"""
@@ -787,6 +794,9 @@ class Integrator(ABC):
                 # FETs Plot some results into pdfs 
                 self._export_to_pdf(i)
                 
+                # FETs rename materials.xml for backup for next step
+                self._rename_materials_xml(i)
+                
                 t += dt
 
             # Final simulation
@@ -794,6 +804,9 @@ class Integrator(ABC):
             Results.save(self.operator, [conc], res_list, [t, t],
                          p, self._i_res + len(self), proc_time, fet_deplete=self.operator.fet_deplete) #FETs 
             self.operator.write_bos_data(len(self) + self._i_res)
+            
+            #FETs 
+            self._export_to_pdf(self._i_res)
 
 
 class SIIntegrator(Integrator):

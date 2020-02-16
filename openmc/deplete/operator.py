@@ -411,16 +411,16 @@ class Operator(TransportOperator):
             for mat in self.geometry.get_all_materials().values():
                 print(local_mats)
                 if str(mat.id) in local_mats:
-                    self._set_number_from_mat(mat) 
+                    self._set_number_from_mat(mat, fet_deplete=fet_deplete) #FETs 
 
         # Else from previous depletion results
         else:
             for mat in self.geometry.get_all_materials().values():
                 if str(mat.id) in local_mats:
-                    self._set_number_from_results(mat, prev_res)
+                    self._set_number_from_results(mat, prev_res, fet_deplete=fet_deplete) #FETs 
         #print(self.number.number) # FETs testing 
         
-    def _set_number_from_mat(self, mat):
+    def _set_number_from_mat(self, mat, fet_deplete=None):
         """Extracts material and number densities from openmc.Material
 
         Parameters
@@ -442,12 +442,12 @@ class Operator(TransportOperator):
                 coeff.append(temp_args)
                 #
                 #print(mat_id, nuclide, np.array(coeff[0]))
-                self.number.set_atom_density(mat_id, nuclide, np.array(coeff[0]), fet_deplete=self.fet_deplete)
+                self.number.set_atom_density(mat_id, nuclide, np.array(coeff[0]), fet_deplete=fet_deplete)
             else:
                 number = density * 1.0e24
                 self.number.set_atom_density(mat_id, nuclide, number)
 
-    def _set_number_from_results(self, mat, prev_res):
+    def _set_number_from_results(self, mat, prev_res, fet_deplete=None):
         """Extracts material nuclides and number densities.
 
         If the nuclide concentration's evolution is tracked, the densities come
@@ -473,14 +473,15 @@ class Operator(TransportOperator):
 
         for nuclide in geom_nuc_densities.keys():
             if nuclide in depl_nuc:
-                concentration = prev_res.get_atoms(mat_id, nuclide)[1][-1]
+                concentration = prev_res.get_atoms(mat_id, nuclide, fet_deplete=fet_deplete)[1][-1] #FETs 
+                print(concentration)
                 volume = prev_res[-1].volume[mat_id]
                 number = concentration / volume
             else:
                 density = geom_nuc_densities[nuclide][1]
                 number = density * 1.0e24
 
-            self.number.set_atom_density(mat_id, nuclide, number)
+            self.number.set_atom_density(mat_id, nuclide, number, fet_deplete=fet_deplete) #FETs 
 
     def initial_condition(self):
         """Performs final setup and returns initial condition.
@@ -586,6 +587,11 @@ class Operator(TransportOperator):
 
                 #TODO Update densities on the Python side, otherwise the
                 # summary.h5 file contains densities at the first time step
+        
+        #FETs export updated materials.xml 
+        if comm.rank==0:
+            self._export_materials_xml()        
+            
     
     def _check_negative(self, val,  fet_deplete=None):
         """
@@ -603,6 +609,20 @@ class Operator(TransportOperator):
         fet = zer.ZernikePolynomial(order, val, radius, sqrt_normed=False)
         fet.force_positive()
         return fet.coeffs
+    
+    def _export_materials_xml(self):
+        """
+        """
+        materials = openmc.Materials(self.geometry.get_all_materials()
+                                     .values())
+        number = self.number
+        if mat in materials: 
+            if mat.id in number.materials:
+                            
+        nuclides = list(self.number.nuclides)
+        for mat in materials:
+            mat._nuclides.sort(key=lambda x: nuclides.index(x[0]))
+        materials.export_to_xml()
     
     
     def _generate_materials_xml(self):
@@ -622,6 +642,7 @@ class Operator(TransportOperator):
             mat._nuclides.sort(key=lambda x: nuclides.index(x[0]))
 
         materials.export_to_xml()
+            
 
     def _get_tally_nuclides(self, fet_deplete=None):
         """Determine nuclides that should be tallied for reaction rates.

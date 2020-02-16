@@ -40,7 +40,7 @@ class ResultsList(list):
                 new.append(Results.from_hdf5(fh, i))
         return new
 
-    def get_atoms(self, mat, nuc):
+    def get_atoms(self, mat, nuc, fet_deplete=None):
         """Get number of nuclides over time from a single material
 
         .. note::
@@ -66,17 +66,27 @@ class ResultsList(list):
             Total number of atoms for specified nuclide
 
         """
+        #FETs 
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order']) 
+        #
+        
         time = np.empty_like(self, dtype=float)
         concentration = np.empty_like(self, dtype=float)
 
         # Evaluate value in each region
         for i, result in enumerate(self):
             time[i] = result.time[0]
-            concentration[i] = result[0, mat, nuc]
+            for j in range(mp):
+                concentration[i * mp + j] = result[0, mat, nuc * mp + j] #FETs
 
         return time, concentration
 
-    def get_reaction_rate(self, mat, nuc, rx):
+    def get_reaction_rate(self, mat, nuc, rx, fet_deplete=None):
         """Get reaction rate in a single material/nuclide over time
 
         .. note::
@@ -104,14 +114,27 @@ class ResultsList(list):
             Array of reaction rates
 
         """
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order']) 
+        #
         time = np.empty_like(self, dtype=float)
         rate = np.empty_like(self, dtype=float)
 
         # Evaluate value in each region
-        for i, result in enumerate(self):
-            time[i] = result.time[0]
-            rate[i] = result.rates[0].get(mat, nuc, rx) * result[0, mat, nuc]
-
+        if fet_deplete is None:
+            for i, result in enumerate(self):
+                time[i] = result.time[0]
+                rate[i] = result.rates[0].get(mat, nuc, rx) * result[0, mat, nuc]
+        else:
+            for i, result in enumerate(self):
+                time[i] = result.time[0]
+                for j in range(mp):
+                    rate[i * mp + j] = result.rates[0].get(mat, nuc, rx * mp + j) \
+                    * result[0, mat, nuc * mp] #FETs To be determined: result[0, mat, nuc * mp + j] 
         return time, rate
 
     def get_eigenvalue(self):
