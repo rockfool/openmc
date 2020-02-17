@@ -461,7 +461,30 @@ class Material(IDManagerMixin):
           self._nuclides.append((nuclide, percent, percent_type, zernike1d, poly_type))
         else:
             self._nuclides.append((nuclide, percent, percent_type))
-
+    
+    def update_nuclide(self, nuclide, coeff, fet_deplete=None):
+        """Update a nuclide with FETs coeffs
+        """
+        cv.check_type('nuclide', nuclide, str)
+        #FETs 
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = num_poly1d(fet_deplete['order'])
+        for nuc in self._nuclides:
+            if nuclide == nuc[0]:
+                percent = coeff[0]
+                percent_type = nuc[2]
+                fet = nuc[3]
+                fet[1::] = coeff[:]
+                poly_type = nuc[4]
+                self._nuclides.remove(nuc)
+                self._nuclides.append((nuclide, percent, percent_type, fet, poly_type))
+                break
+        
+    
     def remove_nuclide(self, nuclide):
         """Remove a nuclide from the material
 

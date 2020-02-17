@@ -409,7 +409,7 @@ class Operator(TransportOperator):
         # From the geometry if no previous depletion results
         if prev_res is None:
             for mat in self.geometry.get_all_materials().values():
-                print(local_mats)
+                #print(local_mats)
                 if str(mat.id) in local_mats:
                     self._set_number_from_mat(mat, fet_deplete=fet_deplete) #FETs 
 
@@ -536,11 +536,9 @@ class Operator(TransportOperator):
                 densities = []
                 for nuc in number_i.nuclides:
                     if nuc in self.nuclides_with_data:
-                        
                         val = number_i.get_atom_density(mat, nuc, fet_deplete=self.fet_deplete) #FETs 
-                        
                         val = self._check_negative(val, fet_deplete=self.fet_deplete) #FETs 
-                        
+                        number_i.set_atom_density(mat, nuc, val, fet_deplete=self.fet_deplete) #FETs 
                         if not isinstance(val, Iterable):
                             val *= 1.0e-24  
                             # If nuclide is zero, do not add to the problem.
@@ -616,12 +614,18 @@ class Operator(TransportOperator):
         materials = openmc.Materials(self.geometry.get_all_materials()
                                      .values())
         number = self.number
-        if mat in materials: 
-            if mat.id in number.materials:
-                            
         nuclides = list(self.number.nuclides)
-        for mat in materials:
-            mat._nuclides.sort(key=lambda x: nuclides.index(x[0]))
+        for i in range(len(materials)):
+            materials[i]._nuclides.sort(key=lambda x: nuclides.index(x[0]))
+            mat = materials[i]
+            for mat_i in number.materials:
+                if str(mat.id) == mat_i:
+                    for j in range(len(mat.nuclides)):
+                        nuc = mat.nuclides[j]
+                        nuc_name = mat.nuclides[j][0]
+                        val = number.get_atom_density(str(mat.id), nuc_name, fet_deplete=self.fet_deplete) 
+                        materials[i].update_nuclide(nuc_name, val, fet_deplete=self.fet_deplete)
+                    break    
         materials.export_to_xml()
     
     
