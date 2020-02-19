@@ -523,13 +523,13 @@ class Chain(object):
                     for r_type, target, _, br in nuc.reactions:
                         # Extract reaction index, and then final reaction rate
                         r_id = rates.index_rx[r_type]
-                        path_rate = nuc_rates[r_id] #FETs
+                        path_rate = nuc_rates[r_id * np : r_id * np + np] #FETs
                 
                         # Loss term -- make sure we only count loss once for
                         # reactions with branching ratios
                         if r_type not in reactions:
                             reactions.add(r_type)
-                            if path_rate != 0.0:
+                            if any(path_rate): # FETs != 0.0:
                                 for p in range(np):
                                     for pp in range(np):
                                         weight_rate = zer.form_b_matrix(p, pp, path_rate)
@@ -539,17 +539,17 @@ class Chain(object):
                                         # Gain term; allow for total annihilation for debug purposes
                                         if target != 'Nothing':
                                             if r_type != 'fission':
-                                                if path_rate != 0.0:
+                                                if any(path_rate): # FETs != 0.0:
                                                     k = self.nuclide_dict[target]
                                                     #matrix[k, i] += path_rate * br
                                                     matrix[k * np + pp, i * np + p] += weight_rate * br # FETs
                                             else:
                                                 for product, y in fission_yields[nuc.name].items():
                                                     yield_val = y * path_rate
-                                                    if yield_val != 0.0:
+                                                    if any(yield_val): # FETs != 0.0:
                                                         k = self.nuclide_dict[product]
-                                                        matrix[k, i] += yield_val
-                                                        matrix[k * np + pp, i * np + p] += weight_rate * yield_val #FETs
+                                                        matrix[k, i] += yield_val[pp] #FETs 
+                                                        matrix[k * np + pp, i * np + p] += weight_rate * yield_val[pp] #FETs
                                                 
                 
                     # Clear set of reactions
@@ -560,6 +560,19 @@ class Chain(object):
         matrix_dok = sp.dok_matrix((n, n))
         dict.update(matrix_dok, matrix)
         #print(n) #FETs testing 
+        # Printing for FETs test
+        with open("matrix.txt", 'w') as file: 
+            tt = matrix_dok.toarray()        
+            for i in range(len(tt)):
+                print(tt[i], '\t', file=file)
+        # 
+        with open("rate_result.txt", 'w') as res:
+            for i, nuc in enumerate(self.nuclides):
+                if nuc.name in rates.index_nuc:
+                    nuc_ind = rates.index_nuc[nuc.name]
+                    nuc_rates = rates[nuc_ind, :]
+                    print(nuc.name, nuc_rates, file=res)
+        #        
         return matrix_dok.tocsr()
 
     def get_branch_ratios(self, reaction="(n,gamma)"):
