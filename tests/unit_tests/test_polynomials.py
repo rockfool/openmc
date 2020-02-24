@@ -42,3 +42,46 @@ def test_zernike_radial():
     test_vals = zn_rad([i * zn_rad.radius for i in rho])
 
     assert np.allclose(ref_vals, test_vals)
+
+
+def test_zernike():
+    coeff = np.asarray([1.1e-1, -3.2e2, 5.3, 7.4, -9.5, 0.005])
+    zn_azimuthal = openmc.ZernikeRadial(coeff)
+    assert zn_azimuthal.order == 2
+    assert zn_azimuthal.radius == 1
+
+    coeff = np.asarray([1.5, -3.6, 9.7e-1, -6.8e-1, 0.11, 0.33e2, 0.002, 13.75, \ 
+                        3.1, -7.3, 7.8e-1, -1.1e-1, 2.56, 5.25e3, 0.123])
+    zn_azimuthal = openmc.ZernikeRadial(coeff, 0.392)
+    assert zn_azimuthal.order == 4
+    assert zn_azimuthal.radius == 0.392
+    #norm_vec = (2 * np.arange(6) + 1) / (np.pi * 0.392 ** 2)
+    norm_coeff = norm_vec * coeff
+
+    rho = 0.5
+    # Reference solution from running the Fortran implementation
+    raw_zn = np.array([
+        1.00000000e+00, -5.00000000e-01, -1.25000000e-01,
+        4.37500000e-01, -2.89062500e-01, -8.98437500e-02])
+
+    ref_vals = np.sum(norm_coeff * raw_zn)
+
+    test_vals = zn_azimuthal(rho * zn_azimuthal.radius)
+
+    assert ref_vals == test_vals
+
+    rho = [0.2, 0.5]
+    # Reference solution from running the Fortran implementation
+    raw_zn1 = np.array([
+        1.00000000e+00, -9.20000000e-01, 7.69600000e-01,
+        -5.66720000e-01, 3.35219200e-01, -1.01747000e-01])
+    raw_zn2 = np.array([
+        1.00000000e+00, -5.00000000e-01, -1.25000000e-01,
+        4.37500000e-01, -2.89062500e-01, -8.98437500e-02])
+
+    ref_vals = [np.sum(norm_coeff * raw_zn1), np.sum(norm_coeff * raw_zn2)]
+
+    test_vals = zn_azimuthal([i * zn_azimuthal.radius for i in rho])
+
+    assert np.allclose(ref_vals, test_vals)
+
