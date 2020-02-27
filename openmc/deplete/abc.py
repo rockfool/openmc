@@ -309,7 +309,8 @@ class ReactionRateHelper(ABC):
         mask = nonzero(number)
         results = self._results_cache
         for col in range(results.shape[1] // mp): #FETs 
-            results[mask, col * mp] /= number[mask] #FETs 
+            for i in range(mp):
+                results[mask, col * mp + i] /= number[mask]  
         return results
 
 
@@ -762,13 +763,15 @@ class Integrator(ABC):
                 zer_file.plot_disk(20, 32, filename)
         # FETs 
     
-    def _rename_materials_xml(self, stage):
+    def _update_materials_xml(self, stage):
         import shutil
+        
         src = "materials.xml"
         des = "materials_" + str(stage) + ".xml"
         shutil.move(src, des)
-        # FETs 
-    
+        #export updated materials.xml 
+        self.operator._export_materials_xml()    
+        
     def integrate(self):
         """Perform the entire depletion process across all steps"""
         with self.operator as conc:
@@ -795,7 +798,7 @@ class Integrator(ABC):
                 self._export_to_pdf(i)
                 
                 # FETs rename materials.xml for backup for next step
-                self._rename_materials_xml(i)
+                self._update_materials_xml(i)
                 
                 t += dt
 

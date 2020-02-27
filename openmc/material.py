@@ -475,7 +475,7 @@ class Material(IDManagerMixin):
                 mp = num_poly1d(fet_deplete['order'])
         for nuc in self._nuclides:
             if nuclide == nuc[0]:
-                percent = coeff[0]
+                percent = coeff[0] 
                 percent_type = nuc[2]
                 fet = nuc[3]
                 fet[1::] = coeff[:]

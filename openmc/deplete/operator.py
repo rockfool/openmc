@@ -438,11 +438,10 @@ class Operator(TransportOperator):
                 coeff = []
                 temp_args = list(itertools.chain(*temp_args))[0]
                 temp_args = temp_args[1:]
-                temp_args[0] = density * 1.0e24
-                coeff.append(temp_args)
-                #
-                #print(mat_id, nuclide, np.array(coeff[0]))
-                self.number.set_atom_density(mat_id, nuclide, np.array(coeff[0]), fet_deplete=fet_deplete)
+                #temp_args[0] = density * 1.0e24
+                coeff = np.array(temp_args) * 1.0e24
+                #print(mat_id, nuclide, coeff)
+                self.number.set_atom_density(mat_id, nuclide, coeff, fet_deplete=fet_deplete)
             else:
                 number = density * 1.0e24
                 self.number.set_atom_density(mat_id, nuclide, number)
@@ -539,6 +538,7 @@ class Operator(TransportOperator):
                         val = number_i.get_atom_density(mat, nuc, fet_deplete=self.fet_deplete) #FETs 
                         val = self._check_negative(val, fet_deplete=self.fet_deplete) #FETs 
                         number_i.set_atom_density(mat, nuc, val, fet_deplete=self.fet_deplete) #FETs 
+                        #print(mat, nuc, val)
                         if not isinstance(val, Iterable):
                             val *= 1.0e-24  
                             # If nuclide is zero, do not add to the problem.
@@ -582,14 +582,8 @@ class Operator(TransportOperator):
                 # Update densities on C API side
                 mat_internal = openmc.lib.materials[int(mat)]
                 mat_internal.set_densities(nuclides, densities)
-
                 #TODO Update densities on the Python side, otherwise the
-                # summary.h5 file contains densities at the first time step
-        
-        #FETs export updated materials.xml 
-        if comm.rank==0:
-            self._export_materials_xml()        
-            
+                # summary.h5 file contains densities at the first time step    
     
     def _check_negative(self, val,  fet_deplete=None):
         """
@@ -611,24 +605,25 @@ class Operator(TransportOperator):
     def _export_materials_xml(self):
         """
         """
-        materials = openmc.Materials(self.geometry.get_all_materials()
-                                     .values())
-        number = self.number
-        nuclides = list(self.number.nuclides)
-        for i in range(len(materials)):
-            materials[i]._nuclides.sort(key=lambda x: nuclides.index(x[0]))
-            mat = materials[i]
-            for mat_i in number.materials:
-                if str(mat.id) == mat_i:
-                    for j in range(len(mat.nuclides)):
-                        nuc = mat.nuclides[j]
-                        nuc_name = mat.nuclides[j][0]
-                        val = number.get_atom_density(str(mat.id), nuc_name, fet_deplete=self.fet_deplete) 
-                        materials[i].update_nuclide(nuc_name, val, fet_deplete=self.fet_deplete)
-                    break    
-        materials.export_to_xml()
-    
-    
+        if comm.rank == 0:
+            materials = openmc.Materials(self.geometry.get_all_materials()
+                                         .values())
+            number = self.number
+            nuclides = list(self.number.nuclides)
+            for i in range(len(materials)):
+                materials[i]._nuclides.sort(key=lambda x: nuclides.index(x[0]))
+                mat = materials[i]
+                for mat_i in number.materials:
+                    if str(mat.id) == mat_i:
+                        for j in range(len(mat.nuclides)):
+                            nuc = mat.nuclides[j]
+                            nuc_name = mat.nuclides[j][0]
+                            val = number.get_atom_density(str(mat.id), nuc_name, fet_deplete=self.fet_deplete) 
+                            val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
+                            materials[i].update_nuclide(nuc_name, val, fet_deplete=self.fet_deplete)
+                        break                      
+            materials.export_to_xml()
+        
     def _generate_materials_xml(self):
         """Creates materials.xml from self.number.
 
@@ -639,14 +634,13 @@ class Operator(TransportOperator):
         """
         materials = openmc.Materials(self.geometry.get_all_materials()
                                      .values())
-
+        #print(materials)
         # Sort nuclides according to order in AtomNumber object
         nuclides = list(self.number.nuclides)
         for mat in materials:
             mat._nuclides.sort(key=lambda x: nuclides.index(x[0]))
 
         materials.export_to_xml()
-            
 
     def _get_tally_nuclides(self, fet_deplete=None):
         """Determine nuclides that should be tallied for reaction rates.
@@ -779,7 +773,7 @@ class Operator(TransportOperator):
                 # number[i_nuc_results] = self.number[mat, nuc] #FETs 
 
             tally_rates = self._rate_helper.get_material_rates(
-                mat_index, nuc_ind, react_ind, fet_deplete=self.fet_deplete) #FETs 
+                mat_index, nuc_ind, react_ind, fet_deplete=fet_deplete) #FETs 
 
             # Compute fission yields for this material
             fission_yields.append(self._yield_helper.weighted_yields(i)) #FETs no change
@@ -788,7 +782,7 @@ class Operator(TransportOperator):
             self._energy_helper.update(tally_rates[:, fission_ind * mp], mat_index) #FETs updated index
 
             # Divide by total number and store
-            rates[i] = self._rate_helper.divide_by_adens(number, fet_deplete=self.fet_deplete) #FETs 
+            rates[i] = self._rate_helper.divide_by_adens(number, fet_deplete=fet_deplete) #FETs 
 
         # Reduce energy produced from all processes
         # J / s / source neutron
@@ -806,10 +800,10 @@ class Operator(TransportOperator):
 
         # Scale reaction rates to obtain units of reactions/sec
         rates *= power / energy
-
+        
         # Store new fission yields on the chain
         self.chain.fission_yields = fission_yields
-
+        
         return OperatorResult(k_combined, rates)
         
 
