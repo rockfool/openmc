@@ -273,7 +273,9 @@ class AtomNumber(object):
         if isinstance(mat, str):
             mat = self.index_mat[mat]
          
-        print(mat, self.n_nuc_burn * mp) # FETs  
+        if fet_deplete is not None:
+            print(mat, self.n_nuc_burn * mp) # FETs  
+            
         self[mat, :self.n_nuc_burn * mp] = val
         
         

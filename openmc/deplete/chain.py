@@ -561,17 +561,17 @@ class Chain(object):
         dict.update(matrix_dok, matrix)
         #print(n) #FETs testing 
         # Printing for FETs test
-        with open("matrix.txt", 'w') as file: 
-            tt = matrix_dok.toarray()        
-            for i in range(len(tt)):
-                print(tt[i], '\t', file=file)
-        # 
-        with open("rate_result.txt", 'w') as res:
-            for i, nuc in enumerate(self.nuclides):
-                if nuc.name in rates.index_nuc:
-                    nuc_ind = rates.index_nuc[nuc.name]
-                    nuc_rates = rates[nuc_ind, :]
-                    print(nuc.name, nuc_rates, file=res)
+        #with open("matrix.txt", 'w') as file: 
+        #    tt = matrix_dok.toarray()        
+        #    for i in range(len(tt)):
+        #        print(tt[i], '\t', file=file)
+        ## 
+        #with open("rate_result.txt", 'w') as res:
+        #    for i, nuc in enumerate(self.nuclides):
+        #        if nuc.name in rates.index_nuc:
+        #            nuc_ind = rates.index_nuc[nuc.name]
+        #            nuc_rates = rates[nuc_ind, :]
+        #            print(nuc.name, nuc_rates, file=res)
         #        
         return matrix_dok.tocsr()
 

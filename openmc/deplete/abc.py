@@ -727,7 +727,7 @@ class Integrator(ABC):
         """Get beginning of step concentrations, reaction rates from Operator
         """
         x = deepcopy(bos_conc)
-        print(x) # testing for FETs 
+        #print(x) # testing for FETs 
         res = self.operator(x, step_power)
         self.operator.write_bos_data(step_index + self._i_res)
         return x, res
@@ -795,7 +795,8 @@ class Integrator(ABC):
                              p, self._i_res + i, proc_time, fet_deplete=self.operator.fet_deplete) #FETs 
                 
                 # FETs Plot some results into pdfs 
-                self._export_to_pdf(i)
+                if self.operator.fet_deplete is not None:
+                    self._export_to_pdf(i)
                 
                 # FETs rename materials.xml for backup for next step
                 self._update_materials_xml(i)
@@ -809,7 +810,8 @@ class Integrator(ABC):
             self.operator.write_bos_data(len(self) + self._i_res)
             
             #FETs 
-            self._export_to_pdf(self._i_res)
+            if self.operator.fet_deplete is not None:
+                self._export_to_pdf(self._i_res)
 
 
 class SIIntegrator(Integrator):

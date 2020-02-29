@@ -462,7 +462,7 @@ class Material(IDManagerMixin):
         else:
             self._nuclides.append((nuclide, percent, percent_type))
     
-    def update_nuclide(self, nuclide, coeff, fet_deplete=None):
+    def update_nuclide(self, nuclide, val, fet_deplete=None):
         """Update a nuclide with FETs coeffs
         """
         cv.check_type('nuclide', nuclide, str)
@@ -475,14 +475,17 @@ class Material(IDManagerMixin):
                 mp = num_poly1d(fet_deplete['order'])
         for nuc in self._nuclides:
             if nuclide == nuc[0]:
-                percent = coeff[0] 
                 percent_type = nuc[2]
-                fet = nuc[3]
-                fet[1::] = coeff[:]
-                poly_type = nuc[4]
                 self._nuclides.remove(nuc)
-                self._nuclides.append((nuclide, percent, percent_type, fet, poly_type))
-                break
+                if fet_deplete is not None:
+                    percent = val[0]
+                    fet = nuc[3]
+                    fet[1::] = val[:]
+                    poly_type = nuc[4]
+                    self._nuclides.append((nuclide, percent, percent_type, fet, poly_type))
+                else:
+                    percent = val
+                    self._nuclides.append((nuclide, percent, percent_type))
         
     
     def remove_nuclide(self, nuclide):

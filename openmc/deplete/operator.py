@@ -536,9 +536,10 @@ class Operator(TransportOperator):
                 for nuc in number_i.nuclides:
                     if nuc in self.nuclides_with_data:
                         val = number_i.get_atom_density(mat, nuc, fet_deplete=self.fet_deplete) #FETs 
-                        val = self._check_negative(val, fet_deplete=self.fet_deplete) #FETs 
-                        number_i.set_atom_density(mat, nuc, val, fet_deplete=self.fet_deplete) #FETs 
-                        #print(mat, nuc, val)
+                        #if self.fet_deplete is not None:
+                        #    val = self._check_negative(val, fet_deplete=self.fet_deplete) 
+                        #    number_i.set_atom_density(mat, nuc, val, fet_deplete=self.fet_deplete) 
+                        #    print(mat, nuc, val)
                         if not isinstance(val, Iterable):
                             val *= 1.0e-24  
                             # If nuclide is zero, do not add to the problem.
@@ -621,7 +622,7 @@ class Operator(TransportOperator):
                             val = number.get_atom_density(str(mat.id), nuc_name, fet_deplete=self.fet_deplete) 
                             val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
                             materials[i].update_nuclide(nuc_name, val, fet_deplete=self.fet_deplete)
-                        break                      
+                        #break                      
             materials.export_to_xml()
         
     def _generate_materials_xml(self):
