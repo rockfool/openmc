@@ -81,8 +81,12 @@ class ResultsList(list):
         # Evaluate value in each region
         for i, result in enumerate(self):
             time[i] = result.time[0]
-            for j in range(mp):
-                concentration[i * mp + j] = result[0, mat, nuc * mp + j] #FETs
+            #FETs
+            if fet_deplete is not None:
+                for j in range(mp):
+                    concentration[i * mp + j] = result[0, mat, nuc * mp + j] 
+            else:
+                concentration[i] = result[0, mat, nuc] 
 
         return time, concentration
 
