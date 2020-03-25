@@ -221,3 +221,35 @@ class Model(object):
 
         with openmc.StatePoint('statepoint.{}.h5'.format(n)) as sp:
             return sp.k_combined
+
+    def run_boron(self, **kwargs):
+        """Run OpenMC with updating criticial boron concentration 
+           and returns critical boron concentration
+        
+        Parameters
+        ----------
+        **kwargs 
+            All keyword arguments are passed to :func:`openmc.run	
+      
+        Returns
+        -------
+        uncertainties.UFloat 
+            Critical boron concentration according to combined k-effective  
+
+        """
+        
+        self.export_to_xml()
+
+        openmc.run(**kwargs)
+
+        n = self.settings.batches
+        if self.settings.statepoint is not None:
+            if 'batches' in self.settings.statepoint:
+                n = self.settings.statepoint['batches'][-1]
+
+        with openmc.StatePoint('statepoint.{}.h5'.format(n)) as sp:
+            keff = sp.k_combined
+        
+        boron = keff * 1e5 
+
+        return boron
