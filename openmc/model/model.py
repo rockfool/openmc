@@ -234,3 +234,29 @@ class Model:
                 tstart = mtime
                 last_statepoint = sp
         return last_statepoint
+
+    def boron_run(self, **kwargs):
+        """Run openmc with critical boron concentration """
+        with openmc.run_in_memory(**kwargs):
+            openmc.simulation_init()
+            while True:
+                # update boron concentration
+                update_boron()
+                # run the next batch
+                status = openmc.next_batch()
+                if status != 0:
+                    break
+        # Get output directory and return the last statepoint written by this run
+        if self.settings.output and 'path' in self.settings.output:
+            output_dir = Path(self.settings.output['path'])
+        else:
+            output_dir = Path.cwd()
+        for sp in output_dir.glob('statepoint.*.h5'):
+            mtime = sp.stat().st_mtime
+            if mtime >= tstart:  # >= allows for poor clock resolution
+                tstart = mtime
+                last_statepoint = sp
+        return last_statepoint
+
+    def update_boron(self):
+        
