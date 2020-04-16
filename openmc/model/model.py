@@ -235,28 +235,46 @@ class Model:
                 last_statepoint = sp
         return last_statepoint
 
-    def boron_run(self, **kwargs):
+    def boron_run(self, mat_id, boron_initial=0.0, **kwargs):
         """Run openmc with critical boron concentration """
-        with openmc.run_in_memory(**kwargs):
-            openmc.simulation_init()
+        with openmc.lib.run_in_memory(**kwargs):
+            openmc.lib.simulation_init()
             while True:
                 # update boron concentration
-                update_boron()
+                if boron_initial >= 0.0: 
+                    boron_old = boron_initial
+                    boron_initial = -1.0 
+                boron_new = self.update_boron(mat_id, boron_old)
+                boron_old = boron_new
                 # run the next batch
-                status = openmc.next_batch()
+                status = openmc.lib.next_batch()
                 if status != 0:
                     break
-        # Get output directory and return the last statepoint written by this run
-        if self.settings.output and 'path' in self.settings.output:
-            output_dir = Path(self.settings.output['path'])
-        else:
-            output_dir = Path.cwd()
-        for sp in output_dir.glob('statepoint.*.h5'):
-            mtime = sp.stat().st_mtime
-            if mtime >= tstart:  # >= allows for poor clock resolution
-                tstart = mtime
-                last_statepoint = sp
-        return last_statepoint
+            openmc.lib.simulation_finalize()
+            print('final boron :', boron_new)
 
-    def update_boron(self):
-        
+    def update_boron(self, mat_id, cbc_old):
+        import openmc.model
+        keff_batch = openmc.lib.keff()  
+        cbc_new = (keff_batch[0] - 1.0) * 1.0e+4 + cbc_old
+        mat_boron = openmc.model.borated_water(boron_ppm = cbc_new)
+        # Write to xml
+        materials = openmc.Materials([mat_boron])
+        for mat in self.materials:
+            if mat.id != mat_id:
+                materials.append(mat)
+        materials.export_to_xml()
+        # Update boron via C API 
+        nuclides = []
+        densities = []
+        for nuc in mat_boron.nuclides:
+            nuclides.append(nuc[0])
+            densities.append(nuc[1])
+        mat_internal = openmc.lib.materials[int(mat_id)]
+        mat_internal.set_densities(nuclides, densities)
+        return cbc_new
+
+
+
+
+
