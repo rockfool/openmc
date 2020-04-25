@@ -20,7 +20,8 @@ __all__ = ['Filter', 'AzimuthalFilter', 'CellFilter',
            'EnergyFunctionFilter', 'LegendreFilter', 'MaterialFilter', 'MeshFilter',
            'MeshSurfaceFilter', 'MuFilter', 'PolarFilter', 'SphericalHarmonicsFilter',
            'SpatialLegendreFilter', 'SurfaceFilter',
-           'UniverseFilter', 'ZernikeFilter', 'ZernikeRadialFilter', 'filters']
+           'UniverseFilter', 'ZernikeFilter', 'ZernikeRadialFilter', 'filters', 
+           'MultipleZernikeFilter']
 
 # Tally functions
 _dll.openmc_cell_filter_get_bins.argtypes = [
@@ -104,6 +105,12 @@ _dll.openmc_zernike_filter_get_order.errcheck = _error_handler
 _dll.openmc_zernike_filter_set_order.argtypes = [c_int32, c_int]
 _dll.openmc_zernike_filter_set_order.restype = c_int
 _dll.openmc_zernike_filter_set_order.errcheck = _error_handler
+_dll.openmc_multiple_zernike_filter_get_orders.argtypes = [c_int32, POINTER(c_int), c_size_t]
+_dll.openmc_multiple_zernike_filter_get_orders.restype = c_int 
+_dll.openmc_multiple_zernike_filter_get_orders.errcheck = _error_handler
+_dll.openmc_multiple_zernike_filter_set_orders.argtypes = [c_int32, POINTER(c_int), c_size_t]
+_dll.openmc_multiple_zernike_filter_set_orders.restype = c_int
+_dll.openmc_multiple_zernike_filter_set_orders.errcheck = _error_handler
 _dll.tally_filters_size.restype = c_size_t
 
 
@@ -407,6 +414,27 @@ class ZernikeFilter(Filter):
     @order.setter
     def order(self, order):
         _dll.openmc_zernike_filter_set_order(self._index, order)
+    
+class MultipleZernikeFilter(Filter):
+    filter_type = 'multiplezernike'
+
+    def __init__(self, orders=None, uid=None, new=True, index=None):
+        super().__init__(uid, new, index)
+        if orders is not None:
+            self.orders = orders
+
+    @property
+    def orders(self):
+        temp_orders = POINTER(c_int)()
+        n = c_size_t()
+        _dll.openmc_multiple_zernike_filter_get_orders(self._index, temp_orders, n)
+        return [temp_orders[i] for i in range(n.value)]
+
+    @order.setter
+    def orders(self, orders):
+        n = len(orders)
+        temp_orders = (c_int*n)(*(i for i in orders))
+        _dll.openmc_multiple_zernike_filter_set_orders(self._index, n, temp_orders)
 
 
 class ZernikeRadialFilter(ZernikeFilter):
@@ -434,7 +462,8 @@ _FILTER_TYPE_MAP = {
     'surface': SurfaceFilter,
     'universe': UniverseFilter,
     'zernike': ZernikeFilter,
-    'zernikeradial': ZernikeRadialFilter
+    'zernikeradial': ZernikeRadialFilter,
+    'multiplezernike': MultipleZernikeFilter
 }
 
 

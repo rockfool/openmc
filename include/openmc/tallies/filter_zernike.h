@@ -64,6 +64,59 @@ protected:
   int order_;
 };
 
+class MultipleZernikeFilter : public Filter
+{
+public:
+  //----------------------------------------------------------------------------
+  // Constructors, destructors
+
+  ~MultipleZernikeFilter() = default;
+
+  //----------------------------------------------------------------------------
+  // Methods
+
+  std::string type() const override {return "multiplezernike";}
+
+  void from_xml(pugi::xml_node node) override;
+
+  void get_all_bins(const Particle* p, TallyEstimator estimator, FilterMatch& match)
+  const override;
+
+  void to_statepoint(hid_t filter_group) const override;
+
+  std::string text_label(int bin) const override;
+
+  //----------------------------------------------------------------------------
+  // Accessors
+
+  int* orders() const { return orders_; }
+  virtual void set_orders(int orders[]);
+
+  double* xs() const { return xs_; }
+  void set_xs(double xs[]) { xs_ = xs; }
+
+  double* ys() const { return ys_; }
+  void set_ys(double y[]) { ys_ = ys; }
+
+  double* rs() const { return rs_; }
+  void set_rs(double r[]) { rs_ = rs; }
+
+  //----------------------------------------------------------------------------
+  // Data members
+
+protected:
+  //! Cartesian x coordinate for the origin of this expansion.
+  double* xs_;
+
+  //! Cartesian y coordinate for the origin of this expansion.
+  double* ys_;
+
+  //! Maximum radius from the origin covered by this expansion.
+  double* rs_;
+
+  double* orders_;
+};
+
 //==============================================================================
 //! Gives even order radial Zernike polynomial moments of a particle's position
 //==============================================================================

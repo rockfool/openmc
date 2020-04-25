@@ -1,4 +1,5 @@
 from numbers import Integral, Real
+from collections import Iterable
 from xml.etree import ElementTree as ET
 
 import numpy as np
@@ -526,3 +527,126 @@ class ZernikeRadialFilter(ZernikeFilter):
     def order(self, order):
         ExpansionFilter.order.__set__(self, order)
         self.bins = ['Z{},0'.format(n) for n in range(0, order+1, 2)]
+
+
+class MultipleZernikeFilter():
+    r"""Parameters
+    ----------
+    order : int
+        Maximum radial Zernike polynomial order
+    x : float
+        x-coordinate of center of circle for normalization
+    y : float
+        y-coordinate of center of circle for normalization
+    r : int or None
+        Radius of circle for normalization
+
+    Attributes
+    ----------
+    order : int
+        Maximum radial Zernike polynomial order
+    x : float
+        x-coordinate of center of circle for normalization
+    y : float
+        y-coordinate of center of circle for normalization
+    r : int or None
+        Radius of circle for normalization
+    id : int
+        Unique identifier for the filter
+    num_bins : int
+        The number of filter bins
+
+    """
+    
+    def __init__(self, orders=[2], xs=[0.0], ys=[0.0], rs=[1.0], filter_id=None):
+        self._id = filter_id
+        self._orders = orders[:]
+        self._xs = xs[:]
+        self._ys = ys[:]
+        self._rs = rs[:]
+
+    def __hash__(self):
+        string = type(self).__name__ + '\n'
+        string += '{: <16}=\t{}\n'.format('\tOrders', self._orders)
+        string += '{: <16}=\t{}\n'.format('\tXs', self._xs)
+        string += '{: <16}=\t{}\n'.format('\tYs', self._ys)
+        string += '{: <16}=\t{}\n'.format('\tRs', self._rs)
+        return hash(string)
+
+    def __repr__(self):
+        string = type(self).__name__ + '\n'
+        string += '{: <16}=\t{}\n'.format('\tOrders', self._orders)
+        string += '{: <16}=\t{}\n'.format('\tID', self._id)
+        return string
+
+    @property
+    def orders(self):
+        return self._orders[:]
+    
+    @orders.setter
+    def orders(self, orders):
+        self.orders.__set__(self, orders)
+        self.bins = [['Z{},{}'.format(n, m)
+                     for n in range(order_i + 1)
+                     for m in range(-n, n + 1, 2)]
+                    for order_i in orders]
+
+    @property
+    def xs(self):
+        return self._xs
+
+    @xs.setter
+    def xs(self, xs):
+        cv.check_type('xs', xs, Iterable)
+        self._xs = xs
+
+    @property
+    def ys(self):
+        return self._ys
+
+    @ys.setter
+    def ys(self, ys):
+        cv.check_type('ys', ys, Iterable)
+        self._ys = ys
+
+    @property
+    def rs(self):
+        return self._rs
+
+    @rs.setter
+    def rs(self, rs):
+        cv.check_type('rs', rs, Iterable)
+        self._rs = rs
+
+    @classmethod
+    def from_hdf5(cls, group, **kwargs):
+        if group['type'][()].decode() != cls.short_name.lower():
+            raise ValueError("Expected HDF5 data for filter type '"
+                             + cls.short_name.lower() + "' but got '"
+                             + group['type'][()].decode() + " instead")
+
+        filter_id = int(group.name.split('/')[-1].lstrip('filter '))
+        orders = group['orders'][()]
+        xs, ys, rs = group['xs'][()], group['ys'][()], group['rs'][()]
+
+        return cls(orders, xs, ys, rs, filter_id)
+
+    def to_xml_element(self):
+        """Return XML Element representing the filter.
+
+        Returns
+        -------
+        element : xml.etree.ElementTree.Element
+            XML element containing Zernike filter data
+
+        """
+        element = super().to_xml_element()
+        subelement = ET.SubElement(element, 'xs')
+        subelement.text = str(self.xs)
+        subelement = ET.SubElement(element, 'ys')
+        subelement.text = str(self.ys)
+        subelement = ET.SubElement(element, 'rs')
+        subelement.text = str(self.rs)
+
+        return element
+        
