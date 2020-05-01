@@ -775,6 +775,14 @@ class Integrator(ABC):
         return (self.operator.prev_res[-1].time[-1],
                 len(self.operator.prev_res) - 1)
 
+    def _update_materials_xml(self, stage):
+        import shutil
+        src = "materials.xml"
+        des = "materials_" + str(stage) + ".xml"
+        shutil.move(src, des)
+        #export updated materials.xml 
+        self.operator._export_materials_xml() 
+
     def integrate(self):
         """Perform the entire depletion process across all steps"""
         with self.operator as conc:
@@ -796,7 +804,8 @@ class Integrator(ABC):
 
                 Results.save(self.operator, conc_list, res_list, [t, t + dt],
                              p, self._i_res + i, proc_time)
-
+                # print materials.xml 
+                self._update_materials_xml(i)
                 t += dt
 
             # Final simulation
@@ -804,6 +813,8 @@ class Integrator(ABC):
             Results.save(self.operator, [conc], res_list, [t, t],
                          p, self._i_res + len(self), proc_time)
             self.operator.write_bos_data(len(self) + self._i_res)
+            # Print materials.xml 
+            self._update_materials_xml(self._i_res)
 
 
 class SIIntegrator(Integrator):

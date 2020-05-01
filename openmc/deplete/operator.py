@@ -546,7 +546,29 @@ class Operator(TransportOperator):
 
                 #TODO Update densities on the Python side, otherwise the
                 # summary.h5 file contains densities at the first time step
-
+    
+    def _export_materials_xml(self):
+        """
+        """
+        if comm.rank == 0:
+            materials = openmc.Materials(self.geometry.get_all_materials()
+                                         .values())
+            number = self.number
+            nuclides = list(self.number.nuclides)
+            for i in range(len(materials)):
+                materials[i]._nuclides.sort(key=lambda x: nuclides.index(x[0]))
+                mat = materials[i]
+                for mat_i in number.materials:
+                    if str(mat.id) == mat_i:
+                        for j in range(len(mat.nuclides)):
+                            nuc = mat.nuclides[j]
+                            nuc_name = mat.nuclides[j][0]
+                            val = number.get_atom_density(str(mat.id), nuc_name) 
+                            val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
+                            materials[i].update_nuclide(nuc_name, val)
+                        #break                      
+            materials.export_to_xml()
+    
     def _generate_materials_xml(self):
         """Creates materials.xml from self.number.
 
