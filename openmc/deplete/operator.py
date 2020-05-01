@@ -566,7 +566,7 @@ class Operator(TransportOperator):
                             val = number.get_atom_density(str(mat.id), nuc_name) 
                             val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
                             materials[i].update_nuclide(nuc_name, val)
-                        #break                      
+                        #break                        
             materials.export_to_xml()
     
     def _generate_materials_xml(self):

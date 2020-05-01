@@ -390,6 +390,18 @@ class Material(IDManagerMixin):
                 self.depletable = True
 
         self._nuclides.append(NuclideTuple(nuclide, percent, percent_type))
+        
+    def update_nuclide(self, nuclide, val):
+        """Update a nuclide 
+        """
+        cv.check_type('nuclide', nuclide, str)
+        #
+        for nuc in self._nuclides:
+            if nuclide == nuc[0]:
+                percent_type = nuc[2]
+                self._nuclides.remove(nuc)
+                percent = val
+                self._nuclides.append(NuclideTuple(nuclide, percent, percent_type))                 
 
     def remove_nuclide(self, nuclide):
         """Remove a nuclide from the material
