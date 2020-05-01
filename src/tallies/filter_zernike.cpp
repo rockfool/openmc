@@ -128,10 +128,11 @@ ZernikeRadialFilter::set_order(int order)
 void
 MultipleZernikeFilter::from_xml(pugi::xml_node node)
 {
-  set_orders(std::stoi(get_node_value(node, "orders")));
-  xs_ = std::stod(get_node_value(node, "xs"));
-  ys_ = std::stod(get_node_value(node, "ys"));
-  rs_ = std::stod(get_node_value(node, "rs"));
+  auto orders = get_node_array<int>(node, "orders")
+  auto xs = get_node_array<double>(node, "xs")
+  auto ys = get_node_array<double>(node, "ys")
+  auto rs = get_node_array<double>(node, "rs")
+  
 }
 
 void
@@ -181,7 +182,7 @@ MultipleZernikeFilter::text_label(int bin) const
 }
 
 void
-MultipleZernikeFilter::set_order(int order)
+MultipleZernikeFilter::set_orders(int orders[])
 {
   if (order < 0) {
     throw std::invalid_argument{"Zernike order must be non-negative."};
