@@ -156,6 +156,10 @@ class Material(IDManagerMixin):
     @property
     def density_units(self):
         return self._density_units
+        
+    @density_units.setter
+    def density_units(self, density_units):
+        self._density_units = density_units
 
     @property
     def depletable(self):
@@ -401,7 +405,18 @@ class Material(IDManagerMixin):
                 percent_type = nuc[2]
                 self._nuclides.remove(nuc)
                 percent = val
-                self._nuclides.append(NuclideTuple(nuclide, percent, percent_type))                 
+                self._nuclides.append(NuclideTuple(nuclide, percent, percent_type))   
+    
+    def find_nuclide(self, nuclide):
+        """ Find the location of the nuclide in material
+            If none return -1
+        """        
+        cv.check_type('nuclide', nuclide, str)
+        for loc_nuc in range(len(self._nuclides)):
+            nuc = self._nuclides[loc_nuc]
+            if nuclide == nuc[0]:
+                return loc_nuc
+        return -1 
 
     def remove_nuclide(self, nuclide):
         """Remove a nuclide from the material

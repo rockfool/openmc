@@ -554,19 +554,28 @@ class Operator(TransportOperator):
             materials = openmc.Materials(self.geometry.get_all_materials()
                                          .values())
             number = self.number
-            nuclides = list(self.number.nuclides)
+            nuclides = list(number.nuclides)
+            flag_success = False
             for i in range(len(materials)):
                 materials[i]._nuclides.sort(key=lambda x: nuclides.index(x[0]))
                 mat = materials[i]
                 for mat_i in number.materials:
                     if str(mat.id) == mat_i:
-                        for j in range(len(mat.nuclides)):
-                            nuc = mat.nuclides[j]
-                            nuc_name = mat.nuclides[j][0]
+                        # change density unit to "sum"
+                        materials[i].density_units = "sum"
+                        flag_success = True
+                        for nuc_name in number.nuclides:
                             val = number.get_atom_density(str(mat.id), nuc_name) 
                             val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
-                            materials[i].update_nuclide(nuc_name, val)
-                        #break                        
+                            loc_nuc = materials[i].find_nuclide(nuc_name)
+                            #print(loc_nuc, nuc_name)
+                            if loc_nuc == -1:
+                                if val > 1.0e-50:
+                                    materials[i].add_nuclide(nuc_name, val)
+                            else:
+                                materials[i].update_nuclide(nuc_name, val)
+                if flag_success:
+                    break                        
             materials.export_to_xml()
     
     def _generate_materials_xml(self):

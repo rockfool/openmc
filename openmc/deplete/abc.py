@@ -814,7 +814,8 @@ class Integrator(ABC):
                          p, self._i_res + len(self), proc_time)
             self.operator.write_bos_data(len(self) + self._i_res)
             # Print materials.xml 
-            self._update_materials_xml(self._i_res)
+            print(i+1)
+            self._update_materials_xml(i+1)
 
 
 class SIIntegrator(Integrator):
