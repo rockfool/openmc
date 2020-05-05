@@ -563,7 +563,6 @@ class Operator(TransportOperator):
                     if str(mat.id) == mat_i:
                         # change density unit to "sum"
                         materials[i].density_units = "sum"
-                        flag_success = True
                         for nuc_name in number.nuclides:
                             val = number.get_atom_density(str(mat.id), nuc_name) 
                             val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
@@ -574,8 +573,6 @@ class Operator(TransportOperator):
                                     materials[i].add_nuclide(nuc_name, val)
                             else:
                                 materials[i].update_nuclide(nuc_name, val)
-                if flag_success:
-                    break                        
             materials.export_to_xml()
     
     def _generate_materials_xml(self):
