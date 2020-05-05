@@ -132,7 +132,18 @@ MultipleZernikeFilter::from_xml(pugi::xml_node node)
   auto xs = get_node_array<double>(node, "xs")
   auto ys = get_node_array<double>(node, "ys")
   auto rs = get_node_array<double>(node, "rs")
-  
+  len_ = orders.size()
+  if(len_ == xs.size() && len_ == ys.size() && len_ == xs.size()){
+    for (int i = 0; i < len_; i++){
+      orders_.push_back(orders[i]); 
+      xs_.push_back(xs[i]);
+      ys_.push_back(ys[i]);
+      rs_.push_back(rs[i]);
+    }
+  } else {
+    throw std::invalid_argument{"MultipleZernike xs ys rs and orders \
+                                 must be in same dimension."};
+  }
 }
 
 void
@@ -160,10 +171,11 @@ void
 MultipleZernikeFilter::to_statepoint(hid_t filter_group) const
 {
   Filter::to_statepoint(filter_group);
-  write_dataset(filter_group, "order", order_);
-  write_dataset(filter_group, "x", x_);
-  write_dataset(filter_group, "y", y_);
-  write_dataset(filter_group, "r", r_);
+  write_dataset(filter_group, "orders", orders_);
+  write_dataset(filter_group, "xs", xs_);
+  write_dataset(filter_group, "ys", ys_);
+  write_dataset(filter_group, "rs", rs_);
+  write_dataset(filter_group, "len", len_);
 }
 
 std::string
@@ -182,13 +194,13 @@ MultipleZernikeFilter::text_label(int bin) const
 }
 
 void
-MultipleZernikeFilter::set_orders(int orders[])
+MultipleZernikeFilter::set_orders(int order, int n)
 {
   if (order < 0) {
-    throw std::invalid_argument{"Zernike order must be non-negative."};
+    throw std::invalid_argument{"MultipleZernike order must be non-negative."};
   }
-  order_ = order;
-  n_bins_ = ((order+1) * (order+2)) / 2;
+  orders_[n] = order;
+  n_bins_[n] = ((order+1) * (order+2)) / 2;
 }
 
 
