@@ -2,7 +2,6 @@
 #define OPENMC_TALLIES_FILTER_ZERNIKE_H
 
 #include <string>
-#include <vector>
 
 #include "openmc/tallies/filter.h"
 
@@ -80,53 +79,54 @@ public:
 
   void from_xml(pugi::xml_node node) override;
 
-  void get_all_bins(const Particle* p, TallyEstimator estimator, FilterMatch& match)
+  void get_all_bins(const Particle* p, TallyEstimator estimator, FilterMatch& match, \
+                    int n);
   const override;
 
   void to_statepoint(hid_t filter_group) const override;
 
-  std::string text_label(int bin) const override;
+  std::string text_label(int bin, int n) const override;
 
   //----------------------------------------------------------------------------
   // Accessors
   
-  int orders(int n) const { return orders_[n]; }
-  virtual void set_orders(int order, int n);
+  std::vector<int>& orders() const { return orders_; }
+  virtual void set_orders(gsl::span<const int32_t> orders);
 
-  double xs(int n) const { return xs_[n]; }
-  void set_xs(double xs, int n) { xs_[n] = xs; }
+  std::vector<double>& xs() const { return xs_; }
+  virtual void set_xs(gsl::span<const int32_t> xs);
 
-  double ys(int n) const { return ys_[n]; }
-  void set_ys(double ys, int n) { ys_[n] = ys; }
+  std::vector<double>& ys() const { return ys_; }
+  virtual void set_ys(gsl::span<const int32_t> ys);
 
-  double rs(int n) const { return rs_[n]; }
-  void set_rs(double r, int n) { rs_[n] = rs; }
+  std::vector<double>& rs() const { return rs_; }
+  virtual void set_rs(gsl::span<const int32_t> rs);
   
-  int n_bins(int n) const { return n_bins_[n]; }
+  std::vector<int>& n_bins() const { return n_bins_; }
+  
+  int len() { return len_; }
 
   //----------------------------------------------------------------------------
   // Data members
 
 protected:
   //! Cartesian x coordinate for the origin of this expansion.
-  vector<double> xs_;
+  std::vector<double> xs_;
 
   //! Cartesian y coordinate for the origin of this expansion.
-  vector<double> ys_;
+  std::vector<double> ys_;
 
   //! Maximum radius from the origin covered by this expansion.
-  vector<double> rs_;
+  std::vector<double> rs_;
   
   //! Numbers of element in Cartesian coordinate
   int len_;
   
   //! Orders of expansion
-  vector<int> orders_;
+  std::vector<int> orders_;
   
   //! override the n_bins_
-  vector<int> n_bins_; 
-  
-  //! override the veight_
+  std::vector<int> n_bins_; 
 };
 
 //==============================================================================

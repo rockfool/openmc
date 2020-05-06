@@ -108,9 +108,17 @@ _dll.openmc_zernike_filter_set_order.errcheck = _error_handler
 _dll.openmc_multiple_zernike_filter_get_orders.argtypes = [c_int32, POINTER(c_int), c_size_t]
 _dll.openmc_multiple_zernike_filter_get_orders.restype = c_int 
 _dll.openmc_multiple_zernike_filter_get_orders.errcheck = _error_handler
-_dll.openmc_multiple_zernike_filter_set_orders.argtypes = [c_int32, POINTER(c_int), c_size_t]
+_dll.openmc_multiple_zernike_filter_set_orders.argtypes = [c_int32, c_size_t, POINTER(c_int)]
 _dll.openmc_multiple_zernike_filter_set_orders.restype = c_int
 _dll.openmc_multiple_zernike_filter_set_orders.errcheck = _error_handler
+_dll.openmc_multiple_zernike_filter_get_params.argtypes = [c_int32, POINTER(c_double), 
+                                                POINTER(c_double), POINTER(c_double), c_size_t]
+_dll.openmc_multiple_zernike_filter_get_params.restype = c_int 
+_dll.openmc_multiple_zernike_filter_get_params.errcheck = _error_handler
+_dll.openmc_multiple_zernike_filter_set_params.argtypes = [c_int32, c_size_t, POINTER(c_double), 
+                                                POINTER(c_double), POINTER(c_double)]
+_dll.openmc_multiple_zernike_filter_set_params.restype = c_int
+_dll.openmc_multiple_zernike_filter_set_params.errcheck = _error_handler
 _dll.tally_filters_size.restype = c_size_t
 
 
@@ -435,6 +443,30 @@ class MultipleZernikeFilter(Filter):
         n = len(orders)
         temp_orders = (c_int*n)(*(i for i in orders))
         _dll.openmc_multiple_zernike_filter_set_orders(self._index, n, temp_orders)
+    
+    @property
+    def params(self):
+        temp_loc = {}
+        n = c_size_t()
+        temp_loc['xs'] = POINTER(c_double)()
+        temp_loc['ys'] = POINTER(c_double)()
+        temp_loc['rs'] = POINTER(c_double)()
+        _dll.openmc_multiple_zernike_filter_get_params(self._index, 
+                        temp_loc['xs'], temp_loc['ys'], temp_loc['rs'], n)
+        return temp_loc
+        
+    @params.setter
+    def params(self, loc):
+        n = len(loc['xs'])
+        xs_array = np.asarray(loc['xs'])
+        ys_array = np.asarray(loc['ys'])
+        rs_array = np.asarray(loc['rs'])
+        xs_array = x_array.ctypes.data_as(POINTER(c_double))
+        ys_array = y_array.ctypes.data_as(POINTER(c_double))
+        rs_array = r_array.ctypes.data_as(POINTER(c_double))
+        _dll.openmc_multiple_zernike_filter_get_params(self._index, n, 
+                        xs_array, ys_array, rs_array)
+        
 
 
 class ZernikeRadialFilter(ZernikeFilter):

@@ -148,19 +148,21 @@ MultipleZernikeFilter::from_xml(pugi::xml_node node)
 
 void
 MultipleZernikeFilter::get_all_bins(const Particle* p, TallyEstimator estimator,
-                            FilterMatch& match) const
+                            FilterMatch& match, int n) const
 {
   // Determine the normalized (r,theta) coordinates.
-  double x = p->r().x - x_;
-  double y = p->r().y - y_;
-  double r = std::sqrt(x*x + y*y) / r_;
-  double theta = std::atan2(y, x);
+  double xs = p->r().x - xs_[n];
+  double ys = p->r().y - ys_[n];
+  double rs = std::sqrt(xs*xs + ys*ys) / rs_[n];
+  double theta = std::atan2(ys, xs);
 
-  if (r <= 1.0) {
+  if (rs <= 1.0) {
     // Compute and return the Zernike weights.
-    std::vector<double> zn(n_bins_);
-    calc_zn(order_, r, theta, zn.data());
-    for (int i = 0; i < n_bins_; i++) {
+    std::vector<double> zn(n_bins_[n]);
+    calc_zn(orders_[n], rs, theta, zn.data());
+    match.bins_.clear();
+    match.weights_.clear();
+    for (int i = 0; i < n_bins_[n]; i++) {
       match.bins_.push_back(i);
       match.weights_.push_back(zn[i]);
     }
@@ -179,30 +181,73 @@ MultipleZernikeFilter::to_statepoint(hid_t filter_group) const
 }
 
 std::string
-MultipleZernikeFilter::text_label(int bin) const
+MultipleZernikeFilter::text_label(int bin, int n) const
 {
-  Expects(bin >= 0 && bin < n_bins_);
-  for (int n = 0; n < order_+1; n++) {
-    int last = (n + 1) * (n + 2) / 2;
+  Expects(bin >= 0 && bin < n_bins_[n]);
+  for (int i = 0; i < orders_[n] + 1; i++) {
+    int last = (i + 1) * (i + 2) / 2;
     if (bin < last) {
-      int first = last - (n + 1);
-      int m = -n + (bin - first) * 2;
-      return fmt::format("Zernike expansion, Z{},{}", n, m);
+      int first = last - (i + 1);
+      int m = -i + (bin - first) * 2;
+      return fmt::format("Zernike expansion, Z{},{}", i, m);
     }
   }
   UNREACHABLE();
 }
 
 void
-MultipleZernikeFilter::set_orders(int order, int n)
-{
-  if (order < 0) {
-    throw std::invalid_argument{"MultipleZernike order must be non-negative."};
+MultipleZernikeFilter::set_orders(gsl::span<const int32_t> orders)
+{ 
+  orders_.clear();
+  n_bins_.clear();
+  len_ = orders.size()
+  for (int i=0; i < len_; i++){
+    if (orders[i] < 0) {
+      throw std::invalid_argument{"MultipleZernike order must be non-negative."};
+    }
+    orders_.push_back(orders[i]);
+    n_bins_.push_back(((orders[i] + 1) * (order[i] + 2)) / 2);
   }
-  orders_[n] = order;
-  n_bins_[n] = ((order+1) * (order+2)) / 2;
 }
 
+void
+MultipleZernikeFilter::set_xs(gsl::span<const int32_t> xs)
+{
+  if (xs.size() == len_){
+    xs_.clear();
+    for (int i=0; i < xs.size(); i++){
+      xs_.push_back(xs[i]);
+    }
+  } else{
+    throw std::invalid_argument{"MultipleZernike xs must match orders."};
+  }
+}
+
+void
+MultipleZernikeFilter::set_ys(gsl::span<const int32_t> ys)
+{
+  if (ys.size() == len_){
+    ys_.clear();
+    for (int i=0; i < ys.size(); i++){
+      ys_.push_back(ys[i]);
+    }
+  } else {
+    throw std::invalid_argument{"MultipleZernike ys must match orders.."};
+  }
+}
+
+void
+MultipleZernikeFilter::set_rs(gsl::span<const int32_t> rs)
+{
+  if (rs.size() == len_){
+  rs_.clear();
+    for (int i=0; i < rs.size(); i++){
+      rs_.push_back(rs[i]);
+    }
+  } else {
+    throw std::invalid_argument{"MultipleZernike rs must match orders."};
+  }
+}
 
 //==============================================================================
 // C-API functions
@@ -302,7 +347,7 @@ check_multiple_zernike_filter(int32_t index)
 
   // Get a pointer to the filter and downcast.
   const auto& filt_base = model::tally_filters[index].get();
-  auto* filt = dynamic_cast<ZernikeFilter*>(filt_base);
+  auto* filt = dynamic_cast<MultipleZernikeFilter*>(filt_base);
 
   // Check the filter type.
   if (!filt) {
@@ -313,7 +358,7 @@ check_multiple_zernike_filter(int32_t index)
 }
 
 extern "C" int
-openmc_multiple_zernike_filter_get_orders(int32_t index, int* order)
+openmc_multiple_zernike_filter_get_orders(int32_t index, int** orders, size_t* n)
 {
   // Check the filter.
   auto check_result = check_multiple_zernike_filter(index);
@@ -322,13 +367,14 @@ openmc_multiple_zernike_filter_get_orders(int32_t index, int* order)
   if (err) return err;
 
   // Output the order.
-  *order = filt->order();
+  *orders = filt->orders().data();
+  *n = filt->len();
   return 0;
 }
 
 extern "C" int
-openmc_multiple_zernike_filter_get_params(int32_t index, double* x, double* y,
-                                 double* r)
+openmc_multiple_zernike_filter_get_params(int32_t index, double** xs, double** ys,
+                                 double** rs, size_t* n)
 {
   // Check the filter.
   auto check_result = check_multiple_zernike_filter(index);
@@ -337,14 +383,15 @@ openmc_multiple_zernike_filter_get_params(int32_t index, double* x, double* y,
   if (err) return err;
 
   // Output the params.
-  *x = filt->x();
-  *y = filt->y();
-  *r = filt->r();
+  *xs = filt->xs().data();
+  *ys = filt->ys().data();
+  *rs = filt->rs().data();
+  *n = filt->len();
   return 0;
 }
 
 extern "C" int
-openmc_multiple_zernike_filter_set_orders(int32_t index, int order)
+openmc_multiple_zernike_filter_set_orders(int32_t index, size_t n, int* orders)
 {
   // Check the filter.
   auto check_result = check_multiple_zernike_filter(index);
@@ -353,13 +400,13 @@ openmc_multiple_zernike_filter_set_orders(int32_t index, int order)
   if (err) return err;
 
   // Update the filter.
-  filt->set_order(order);
+  filt->set_orders({orders, n});
   return 0;
 }
 
 extern "C" int
-openmc_multiple_zernike_filter_set_params(int32_t index, const double* x,
-                                 const double* y, const double* r)
+openmc_multiple_zernike_filter_set_params(int32_t index, size_t n, const double* xs,
+                                 const double* ys, const double* rs)
 {
   // Check the filter.
   auto check_result = check_multiple_zernike_filter(index);
@@ -368,9 +415,9 @@ openmc_multiple_zernike_filter_set_params(int32_t index, const double* x,
   if (err) return err;
 
   // Update the filter.
-  if (x) filt->set_x(*x);
-  if (y) filt->set_y(*y);
-  if (r) filt->set_r(*r);
+  if (xs) filt->set_xs({xs, n});
+  if (ys) filt->set_ys({ys, n});
+  if (rs) filt->set_rs({rs, n});
   return 0;
 }
 

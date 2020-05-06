@@ -126,6 +126,12 @@ extern "C" {
   int openmc_zernike_filter_set_order(int32_t index, int order);
   int openmc_zernike_filter_set_params(int32_t index, const double* x,
                                        const double* y, const double* r);
+  int openmc_multiple_zernike_filter_get_orders(int32_t index, int** orders, size_t* n);
+  int openmc_multiple_zernike_filter_get_params(int32_t index, double** xs, 
+                                       double** ys, double** rs, size_t* n);
+  int openmc_multiple_zernike_filter_set_orders(int32_t index, size_t n, const int* orders);
+  int openmc_multiple_zernike_filter_set_params(int32_t index, size_t n, const double* xs,
+                                       const double* ys, const double* rs);                                     
 
   //! Sets the fixed variables that are used for CMFD linear solver
   //! \param[in] CSR format index pointer array of loss matrix
