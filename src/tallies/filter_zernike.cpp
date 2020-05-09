@@ -128,18 +128,21 @@ ZernikeRadialFilter::set_order(int order)
 void
 MultipleZernikeFilter::from_xml(pugi::xml_node node)
 {
-  auto orders = get_node_array<int>(node, "orders")
-  auto xs = get_node_array<double>(node, "xs")
-  auto ys = get_node_array<double>(node, "ys")
-  auto rs = get_node_array<double>(node, "rs")
-  len_ = orders.size()
+  auto orders = get_node_array<int>(node, "order");
+  auto xs = get_node_array<double>(node, "x");
+  auto ys = get_node_array<double>(node, "y");
+  auto rs = get_node_array<double>(node, "r");
+  len_ = orders.size();
+  n_counter_ = -1;
   if(len_ == xs.size() && len_ == ys.size() && len_ == xs.size()){
     for (int i = 0; i < len_; i++){
-      orders_.push_back(orders[i]); 
+      //orders_.push_back(orders[i]); 
+      set_orders(orders);
       xs_.push_back(xs[i]);
       ys_.push_back(ys[i]);
       rs_.push_back(rs[i]);
     }
+    update_n_bins(0);
   } else {
     throw std::invalid_argument{"MultipleZernike xs ys rs and orders \
                                  must be in same dimension."};
@@ -148,7 +151,7 @@ MultipleZernikeFilter::from_xml(pugi::xml_node node)
 
 void
 MultipleZernikeFilter::get_all_bins(const Particle* p, TallyEstimator estimator,
-                            FilterMatch& match, int n) const
+                            FilterMatch& match, int n)
 {
   // Determine the normalized (r,theta) coordinates.
   double xs = p->r().x - xs_[n];
@@ -158,11 +161,35 @@ MultipleZernikeFilter::get_all_bins(const Particle* p, TallyEstimator estimator,
 
   if (rs <= 1.0) {
     // Compute and return the Zernike weights.
-    std::vector<double> zn(n_bins_[n]);
+    update_n_bins(n); 
+    // update n_bins_
+    std::vector<double> zn(n_bins_);
     calc_zn(orders_[n], rs, theta, zn.data());
     match.bins_.clear();
     match.weights_.clear();
-    for (int i = 0; i < n_bins_[n]; i++) {
+    for (int i = 0; i < n_bins_; i++) {
+      match.bins_.push_back(i);
+      match.weights_.push_back(zn[i]);
+    }
+  }
+}
+
+void
+MultipleZernikeFilter::get_all_bins(const Particle* p, TallyEstimator estimator,
+                            FilterMatch& match) const  
+{
+  int n = n_counter_;
+  // Determine the normalized (r,theta) coordinates.
+  double xs = p->r().x - xs_[n];
+  double ys = p->r().y - ys_[n];
+  double rs = std::sqrt(xs*xs + ys*ys) / rs_[n];
+  double theta = std::atan2(ys, xs);
+  
+  if (rs <= 1.0) {
+    // Compute and return the Zernike weights.
+    std::vector<double> zn(n_bins_);
+    calc_zn(orders_[n], rs, theta, zn.data());
+    for (int i = 0; i < n_bins_; i++) {
       match.bins_.push_back(i);
       match.weights_.push_back(zn[i]);
     }
@@ -173,17 +200,34 @@ void
 MultipleZernikeFilter::to_statepoint(hid_t filter_group) const
 {
   Filter::to_statepoint(filter_group);
-  write_dataset(filter_group, "orders", orders_);
-  write_dataset(filter_group, "xs", xs_);
-  write_dataset(filter_group, "ys", ys_);
-  write_dataset(filter_group, "rs", rs_);
+  write_dataset(filter_group, "order", orders_);
+  write_dataset(filter_group, "x", xs_);
+  write_dataset(filter_group, "y", ys_);
+  write_dataset(filter_group, "r", rs_);
   write_dataset(filter_group, "len", len_);
 }
 
 std::string
-MultipleZernikeFilter::text_label(int bin, int n) const
+MultipleZernikeFilter::text_label(int bin, int n) 
 {
-  Expects(bin >= 0 && bin < n_bins_[n]);
+  update_n_bins(n);
+  Expects(bin >= 0 && bin < n_bins_);
+  for (int i = 0; i < orders_[n] + 1; i++) {
+    int last = (i + 1) * (i + 2) / 2;
+    if (bin < last) {
+      int first = last - (i + 1);
+      int m = -i + (bin - first) * 2;
+      return fmt::format("Zernike expansion, Z{},{}", i, m);
+    }
+  }
+  UNREACHABLE();
+}
+
+std::string
+MultipleZernikeFilter::text_label(int bin) const
+{
+  int n = n_counter_;
+  Expects(bin >= 0 && bin < n_bins_);
   for (int i = 0; i < orders_[n] + 1; i++) {
     int last = (i + 1) * (i + 2) / 2;
     if (bin < last) {
@@ -199,23 +243,25 @@ void
 MultipleZernikeFilter::set_orders(gsl::span<const int32_t> orders)
 { 
   orders_.clear();
-  n_bins_.clear();
-  len_ = orders.size()
-  for (int i=0; i < len_; i++){
+  v_n_bins_.clear();
+  len_ = orders.size();
+  n_counter_ = -1;
+  for (int i = 0; i < len_; i++){
     if (orders[i] < 0) {
       throw std::invalid_argument{"MultipleZernike order must be non-negative."};
     }
     orders_.push_back(orders[i]);
-    n_bins_.push_back(((orders[i] + 1) * (order[i] + 2)) / 2);
+    v_n_bins_.push_back(((orders[i] + 1) * (orders[i] + 2)) / 2);
   }
+  update_n_bins(0);
 }
 
 void
-MultipleZernikeFilter::set_xs(gsl::span<const int32_t> xs)
+MultipleZernikeFilter::set_xs(gsl::span<const double> xs)
 {
   if (xs.size() == len_){
     xs_.clear();
-    for (int i=0; i < xs.size(); i++){
+    for (int i = 0; i < xs.size(); i++){
       xs_.push_back(xs[i]);
     }
   } else{
@@ -224,11 +270,11 @@ MultipleZernikeFilter::set_xs(gsl::span<const int32_t> xs)
 }
 
 void
-MultipleZernikeFilter::set_ys(gsl::span<const int32_t> ys)
+MultipleZernikeFilter::set_ys(gsl::span<const double> ys)
 {
   if (ys.size() == len_){
     ys_.clear();
-    for (int i=0; i < ys.size(); i++){
+    for (int i = 0; i < ys.size(); i++){
       ys_.push_back(ys[i]);
     }
   } else {
@@ -237,11 +283,11 @@ MultipleZernikeFilter::set_ys(gsl::span<const int32_t> ys)
 }
 
 void
-MultipleZernikeFilter::set_rs(gsl::span<const int32_t> rs)
+MultipleZernikeFilter::set_rs(gsl::span<const double> rs)
 {
   if (rs.size() == len_){
-  rs_.clear();
-    for (int i=0; i < rs.size(); i++){
+    rs_.clear();
+    for (int i = 0; i < rs.size(); i++){
       rs_.push_back(rs[i]);
     }
   } else {
@@ -391,7 +437,7 @@ openmc_multiple_zernike_filter_get_params(int32_t index, double** xs, double** y
 }
 
 extern "C" int
-openmc_multiple_zernike_filter_set_orders(int32_t index, size_t n, int* orders)
+openmc_multiple_zernike_filter_set_orders(int32_t index, size_t n, const int* orders)
 {
   // Check the filter.
   auto check_result = check_multiple_zernike_filter(index);

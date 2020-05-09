@@ -73,7 +73,8 @@ public:
   //! For example, an `EnergyFilter` might return the string
   //! "Incoming Energy [0.625E-6, 20.0)".
   virtual std::string text_label(int bin) const = 0;
-
+  
+  virtual void update_counter() { ; }
   //----------------------------------------------------------------------------
   // Accessors
 

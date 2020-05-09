@@ -23,7 +23,8 @@ _FILTER_TYPES = (
     'universe', 'material', 'cell', 'cellborn', 'surface', 'mesh', 'energy',
     'energyout', 'mu', 'polar', 'azimuthal', 'distribcell', 'delayedgroup',
     'energyfunction', 'cellfrom', 'legendre', 'spatiallegendre',
-    'sphericalharmonics', 'zernike', 'zernikeradial', 'particle', 'cellinstance'
+    'sphericalharmonics', 'zernike', 'zernikeradial', 'particle', 'cellinstance',
+    'multiplezernike'
 )
 
 _CURRENT_NAMES = (

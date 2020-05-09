@@ -137,6 +137,8 @@ Filter* Filter::create(const std::string& type, int32_t id)
     model::tally_filters.push_back(std::make_unique<ZernikeFilter>());
   } else if (type == "zernikeradial") {
     model::tally_filters.push_back(std::make_unique<ZernikeRadialFilter>());
+  } else if (type == "multiplezernike") {
+    model::tally_filters.push_back(std::make_unique<MultipleZernikeFilter>());
   } else {
     throw std::runtime_error{"Unknown filter type: " + type};
   }

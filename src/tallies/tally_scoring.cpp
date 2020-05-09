@@ -36,6 +36,8 @@ FilterBinIter::FilterBinIter(const Tally& tally, Particle* p)
     if (!match.bins_present_) {
       match.bins_.clear();
       match.weights_.clear();
+      if (std::strcmp(model::tally_filters[i_filt]->type().c_str(), "multiplezernike") == 0) 
+        model::tally_filters[i_filt]->update_counter();
       model::tally_filters[i_filt]->get_all_bins(p, tally_.estimator_, match);
       match.bins_present_ = true;
     }

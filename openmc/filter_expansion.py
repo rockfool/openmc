@@ -529,7 +529,7 @@ class ZernikeRadialFilter(ZernikeFilter):
         self.bins = ['Z{},0'.format(n) for n in range(0, order+1, 2)]
 
 
-class MultipleZernikeFilter():
+class MultipleZernikeFilter(ExpansionFilter):
     r"""Parameters
     ----------
     order : int
@@ -558,65 +558,65 @@ class MultipleZernikeFilter():
 
     """
     
-    def __init__(self, orders=[2], xs=[0.0], ys=[0.0], rs=[1.0], filter_id=None):
+    def __init__(self, order=[2], x=[0.0], y=[0.0], r=[1.0], filter_id=None):
         self._id = filter_id
-        self._orders = orders[:]
-        self._xs = xs[:]
-        self._ys = ys[:]
-        self._rs = rs[:]
+        self._order = order[:]
+        self._x = x[:]
+        self._y = y[:]
+        self._r = r[:]
 
     def __hash__(self):
         string = type(self).__name__ + '\n'
-        string += '{: <16}=\t{}\n'.format('\tOrders', self._orders)
-        string += '{: <16}=\t{}\n'.format('\tXs', self._xs)
-        string += '{: <16}=\t{}\n'.format('\tYs', self._ys)
-        string += '{: <16}=\t{}\n'.format('\tRs', self._rs)
+        string += '{: <16}=\t{}\n'.format('\tOrder', self._order)
+        string += '{: <16}=\t{}\n'.format('\tX', self._x)
+        string += '{: <16}=\t{}\n'.format('\tY', self._y)
+        string += '{: <16}=\t{}\n'.format('\tR', self._r)
         return hash(string)
 
     def __repr__(self):
         string = type(self).__name__ + '\n'
-        string += '{: <16}=\t{}\n'.format('\tOrders', self._orders)
+        string += '{: <16}=\t{}\n'.format('\tOrder', self._order)
         string += '{: <16}=\t{}\n'.format('\tID', self._id)
         return string
 
     @property
-    def orders(self):
-        return self._orders[:]
+    def order(self):
+        return self._order[:]
     
-    @orders.setter
-    def orders(self, orders):
-        self.orders.__set__(self, orders)
+    @order.setter
+    def order(self, order):
+        self.order.__set__(self, order)
         self.bins = [['Z{},{}'.format(n, m)
-                     for n in range(order_i + 1)
-                     for m in range(-n, n + 1, 2)]
-                    for order_i in orders]
+                    for n in range(order_i + 1)
+                    for m in range(-n, n + 1, 2)]
+                    for order_i in order]
 
     @property
-    def xs(self):
-        return self._xs
+    def x(self):
+        return self._x
 
-    @xs.setter
-    def xs(self, xs):
-        cv.check_type('xs', xs, Iterable)
-        self._xs = xs
-
-    @property
-    def ys(self):
-        return self._ys
-
-    @ys.setter
-    def ys(self, ys):
-        cv.check_type('ys', ys, Iterable)
-        self._ys = ys
+    @x.setter
+    def x(self, x):
+        cv.check_type('x', x, Iterable)
+        self._x = x
 
     @property
-    def rs(self):
-        return self._rs
+    def y(self):
+        return self._y
 
-    @rs.setter
-    def rs(self, rs):
-        cv.check_type('rs', rs, Iterable)
-        self._rs = rs
+    @y.setter
+    def y(self, y):
+        cv.check_type('y', y, Iterable)
+        self._y = y
+
+    @property
+    def r(self):
+        return self._r
+
+    @r.setter
+    def r(self, r):
+        cv.check_type('r', r, Iterable)
+        self._r = r
 
     @classmethod
     def from_hdf5(cls, group, **kwargs):
@@ -626,10 +626,10 @@ class MultipleZernikeFilter():
                              + group['type'][()].decode() + " instead")
 
         filter_id = int(group.name.split('/')[-1].lstrip('filter '))
-        orders = group['orders'][()]
-        xs, ys, rs = group['xs'][()], group['ys'][()], group['rs'][()]
+        order = group['order'][()]
+        x, y, r = group['x'][()], group['y'][()], group['r'][()]
 
-        return cls(orders, xs, ys, rs, filter_id)
+        return cls(order, x, y, r, filter_id)
 
     def to_xml_element(self):
         """Return XML Element representing the filter.
@@ -637,16 +637,17 @@ class MultipleZernikeFilter():
         Returns
         -------
         element : xml.etree.ElementTree.Element
-            XML element containing Zernike filter data
+            XML element containing MultipleZernike filter data
 
         """
+        
         element = super().to_xml_element()
-        subelement = ET.SubElement(element, 'xs')
-        subelement.text = str(self.xs)
-        subelement = ET.SubElement(element, 'ys')
-        subelement.text = str(self.ys)
-        subelement = ET.SubElement(element, 'rs')
-        subelement.text = str(self.rs)
+        subelement = ET.SubElement(element, 'x')
+        subelement.text = str(self.x)
+        subelement = ET.SubElement(element, 'y')
+        subelement.text = str(self.y)
+        subelement = ET.SubElement(element, 'r')
+        subelement.text = str(self.r)
 
         return element
         

@@ -79,32 +79,45 @@ public:
 
   void from_xml(pugi::xml_node node) override;
 
+  void get_all_bins(const Particle* p, TallyEstimator estimator, FilterMatch& match)
+  const override;
+  
   void get_all_bins(const Particle* p, TallyEstimator estimator, FilterMatch& match, \
                     int n);
-  const override;
 
   void to_statepoint(hid_t filter_group) const override;
-
-  std::string text_label(int bin, int n) const override;
+  
+  std::string text_label(int bin) const override;
+  std::string text_label(int bin, int n);
 
   //----------------------------------------------------------------------------
   // Accessors
   
-  std::vector<int>& orders() const { return orders_; }
+  std::vector<int>& orders() { return orders_; }
+  const std::vector<int>& orders() const { return orders_; }
   virtual void set_orders(gsl::span<const int32_t> orders);
-
-  std::vector<double>& xs() const { return xs_; }
-  virtual void set_xs(gsl::span<const int32_t> xs);
-
-  std::vector<double>& ys() const { return ys_; }
-  virtual void set_ys(gsl::span<const int32_t> ys);
-
-  std::vector<double>& rs() const { return rs_; }
-  virtual void set_rs(gsl::span<const int32_t> rs);
   
-  std::vector<int>& n_bins() const { return n_bins_; }
+  std::vector<double>& xs() { return xs_; }
+  const std::vector<double>& xs() const { return xs_; }
+  virtual void set_xs(gsl::span<const double> xs);
+  
+  std::vector<double>& ys() { return ys_; }
+  const std::vector<double>& ys() const { return ys_; }
+  virtual void set_ys(gsl::span<const double> ys);
+  
+  std::vector<double>& rs() { return rs_; }
+  const std::vector<double>& rs() const { return rs_; }
+  virtual void set_rs(gsl::span<const double> rs);
   
   int len() { return len_; }
+  
+  void update_n_bins(int n) { n_bins_ = v_n_bins_[n]; }
+  
+  void update_counter() {
+    n_counter_ += 1;
+    n_bins_ = v_n_bins_[n_counter_];
+    if (n_counter_ >= len_) n_counter_ = 0;
+  } 
 
   //----------------------------------------------------------------------------
   // Data members
@@ -125,8 +138,12 @@ protected:
   //! Orders of expansion
   std::vector<int> orders_;
   
-  //! override the n_bins_
-  std::vector<int> n_bins_; 
+  //! list of the n_bins_ in filter class
+  std::vector<int> v_n_bins_; 
+  
+  //! static counter 
+  int n_counter_;
+    
 };
 
 //==============================================================================

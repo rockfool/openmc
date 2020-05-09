@@ -426,20 +426,20 @@ class ZernikeFilter(Filter):
 class MultipleZernikeFilter(Filter):
     filter_type = 'multiplezernike'
 
-    def __init__(self, orders=None, uid=None, new=True, index=None):
+    def __init__(self, order=None, uid=None, new=True, index=None):
         super().__init__(uid, new, index)
-        if orders is not None:
-            self.orders = orders
+        if order is not None:
+            self.order = order
 
     @property
-    def orders(self):
+    def order(self):
         temp_orders = POINTER(c_int)()
         n = c_size_t()
         _dll.openmc_multiple_zernike_filter_get_orders(self._index, temp_orders, n)
         return [temp_orders[i] for i in range(n.value)]
 
     @order.setter
-    def orders(self, orders):
+    def order(self, orders):
         n = len(orders)
         temp_orders = (c_int*n)(*(i for i in orders))
         _dll.openmc_multiple_zernike_filter_set_orders(self._index, n, temp_orders)
@@ -448,19 +448,19 @@ class MultipleZernikeFilter(Filter):
     def params(self):
         temp_loc = {}
         n = c_size_t()
-        temp_loc['xs'] = POINTER(c_double)()
-        temp_loc['ys'] = POINTER(c_double)()
-        temp_loc['rs'] = POINTER(c_double)()
+        temp_loc['x'] = POINTER(c_double)()
+        temp_loc['y'] = POINTER(c_double)()
+        temp_loc['r'] = POINTER(c_double)()
         _dll.openmc_multiple_zernike_filter_get_params(self._index, 
-                        temp_loc['xs'], temp_loc['ys'], temp_loc['rs'], n)
+                        temp_loc['x'], temp_loc['y'], temp_loc['r'], n)
         return temp_loc
         
     @params.setter
     def params(self, loc):
-        n = len(loc['xs'])
-        xs_array = np.asarray(loc['xs'])
-        ys_array = np.asarray(loc['ys'])
-        rs_array = np.asarray(loc['rs'])
+        n = len(loc['x'])
+        xs_array = np.asarray(loc['x'])
+        ys_array = np.asarray(loc['y'])
+        rs_array = np.asarray(loc['r'])
         xs_array = x_array.ctypes.data_as(POINTER(c_double))
         ys_array = y_array.ctypes.data_as(POINTER(c_double))
         rs_array = r_array.ctypes.data_as(POINTER(c_double))
