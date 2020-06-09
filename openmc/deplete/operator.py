@@ -564,15 +564,16 @@ class Operator(TransportOperator):
                         # change density unit to "sum"
                         materials[i].density_units = "sum"
                         for nuc_name in number.nuclides:
-                            val = number.get_atom_density(str(mat.id), nuc_name) 
-                            val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
-                            loc_nuc = materials[i].find_nuclide(nuc_name)
-                            #print(loc_nuc, nuc_name)
-                            if loc_nuc == -1:
-                                if val > 1.0e-50:
-                                    materials[i].add_nuclide(nuc_name, val)
-                            else:
-                                materials[i].update_nuclide(nuc_name, val)
+                            if nuc_name in self.nuclides_with_data:
+                                val = number.get_atom_density(str(mat.id), nuc_name) 
+                                val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
+                                loc_nuc = materials[i].find_nuclide(nuc_name)
+                                #print(loc_nuc, nuc_name)
+                                if loc_nuc == -1:
+                                    if val > 1.0e-50:
+                                        materials[i].add_nuclide(nuc_name, val)
+                                else:
+                                    materials[i].update_nuclide(nuc_name, val)
             materials.export_to_xml()
     
     def _generate_materials_xml(self):
