@@ -185,13 +185,77 @@ class CECMIntegrator(Integrator):
         # deplete across first half of inteval
         time0, x_middle = timed_deplete(self.chain, conc, rates, dt / 2)
         res_middle = self.operator(x_middle, power)
-
+        
         # deplete across entire interval with BOS concentrations,
         # MOS reaction rates
         time1, x_end = timed_deplete(self.chain, conc, res_middle.rates, dt)
-
+        
+        # quadratic depletion for gadolinium if needed 
+        res_middle = self.qd_deplete(x_middle, res_middle, x_end)
+        
         return time0 + time1, [x_middle, x_end], [res_middle]
+    
 
+    def qd_deplete(self, num_pre, res, num_updated):
+        print('QD method is in process...')
+        for mat_id in range(len(num_pre)):
+            if self.qd_check(mat_id, num_pre):
+                print('QD method is on in material ', mat_id)
+                self.qd_initial()
+                self.qd_form_matrix()
+                self.qd_solve_matrix()
+                self.qd_post_correct()
+                self.qd_fit_coeff()
+                self.qd_calc_rates()
+                self.qd_update_gad()
+                self.qd_final()
+            else:
+                print('QD method is off in material', mat_id, ' as Gd-155 or Gd-177 is below cutoff...')
+        
+        return res 
+
+    
+    def qd_initial(self):
+        pass
+
+
+    def qd_form_matrix(self):    
+        pass
+
+
+    def qd_solve_matrix(self):
+        pass
+    
+    
+    def qd_fit_coeff(self):
+        pass 
+
+     
+    def qd_calc_rates(self):
+        pass
+
+    
+    def qd_update_gad(self):
+        pass
+
+    
+    def qd_post_correct(self):
+        pass         
+    
+
+    def qd_check(self, mat_id, num):
+       qd_flag = False
+       #print(len(self.chain.nuclides))
+       for nuc in self.chain.nuclides:
+           if nuc.name == 'Gd155':
+               loc = self.chain.nuclide_dict[nuc.name]
+               if num[mat_id][loc] > 1.0e-7:
+                   gd_flag = True
+           if nuc.name == 'Gd157':
+               loc = self.chain.nuclide_dict[nuc.name]
+               if num[mat_id][loc] > 1.0e-7:
+                   qd_flag = True
+       return qd_flag
 
 class CF4Integrator(Integrator):
     r"""Deplete using the CF4 algorithm.
