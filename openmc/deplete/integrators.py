@@ -154,7 +154,16 @@ class CECMIntegrator(Integrator):
     power : iterable of float
         Power of the reactor in [W] for each interval in :attr:`timesteps`
     """
+    import numpy as np 
     _num_stages = 2
+    #
+    _n_gad_nuc = 7 
+    _n_substep = 30
+    _cut_off = 1.0e-7
+    _n_max_iter = 100 
+    _max_hf = 1.0e30 
+    _n_gad_chain_nuc = 29 
+    #
 
     def __call__(self, conc, rates, dt, power, _i=None):
         """Integrate using CE/CM
@@ -215,9 +224,28 @@ class CECMIntegrator(Integrator):
         return res 
 
     
-    def qd_initial(self):
-        pass
-
+    def qd_initial(self, mat_id, num_pre):
+        from .chain import Chain 
+        # 3 sizes of ndarray are filled with t(n-1), t(n) and t(n+1) 
+        self.flux = np.zeros(3)
+        self.absorption = np.zeros((_n_gad_nuc, 3))
+        self.numden = np.zeros((_n_gad_nuc, 3))
+        self.postcf = np.ones((_n_gad_nuc, 3))
+        self.save_dep_gad_numden = np.zeros(_n_gad_chain_nuc)
+        self.last_dep_gad_numden = np.zeros(_n_gad_chain_nuc)
+        # check if gad_numden is in num_pre, copy it if possible otherwise set to 0 
+        gad_chain = Chain.from_xml("chain_gad_bp.xml")
+        self.gad_chain_nuc = []
+        for nuc in gad_chain.nuclides:
+            self.gad_chain_nuc.append(nuc.name)
+        for i, nuc in enumerate(self.gad_chain_nuc):
+            if nuc in self.chain.nuclides:
+                self.save_dep_gad_numden[i] = num_pre[mat_id][self.chain.nuclide_dict[nuc.name]]
+                self.last_dep_gad_numden[i] = self.save_dep_gad_numden[i]
+            else:
+                self.save_dep_gad_numden[i] = 0.0
+                self.last_dep_gad_numden[i] = self.save_dep_gad_numben[i]
+         
 
     def qd_form_matrix(self):    
         pass
