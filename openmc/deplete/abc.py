@@ -778,7 +778,7 @@ class Integrator(ABC):
     def _update_materials_xml(self, stage):
         import shutil
         src = "materials.xml"
-        des = "materials_" + str(stage) + ".xml"
+        des = "materials_n" + str(stage) + ".xml"
         shutil.move(src, des)
         #export updated materials.xml 
         self.operator._export_materials_xml() 
