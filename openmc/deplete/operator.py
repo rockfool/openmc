@@ -121,6 +121,15 @@ class Operator(TransportOperator):
         ``None`` implies no limit on the depth.
 
         .. versionadded:: 0.12
+    print_geometry : bool, optional
+        Option to indicate whether to print geometry.xml at initialization
+        Switch it off when simulating TRISO-related model with massive 
+        surfaces and cells definition. Moreover, "summary.h5" could be 
+        controlled in settings.
+        
+    print_materials : bool, optional
+        Option to indicate whether to print materials_n*.xml at each 
+        depletion time step.
 
     Attributes
     ----------
@@ -167,7 +176,8 @@ class Operator(TransportOperator):
                  diff_burnable_mats=False, energy_mode="fission-q",
                  fission_q=None, dilute_initial=1.0e3,
                  fission_yield_mode="constant", fission_yield_opts=None,
-                 reduce_chain=False, reduce_chain_level=None):
+                 reduce_chain=False, reduce_chain_level=None, 
+                 print_geometry=True, print_materials=False):
         if fission_yield_mode not in self._fission_helpers:
             raise KeyError(
                 "fission_yield_mode must be one of {}, not {}".format(
@@ -187,6 +197,8 @@ class Operator(TransportOperator):
         self.settings = settings
         self.geometry = geometry
         self.diff_burnable_mats = diff_burnable_mats
+        self.print_geometry = print_geometry
+        self.print_materials = print_materials
 
         # Reduce the chain before we create more materials
         if reduce_chain:
@@ -482,7 +494,8 @@ class Operator(TransportOperator):
 
         # Create XML files
         if comm.rank == 0:
-            self.geometry.export_to_xml()
+            if self.print_geometry:
+                self.geometry.export_to_xml()
             self.settings.export_to_xml()
             self._generate_materials_xml()
 

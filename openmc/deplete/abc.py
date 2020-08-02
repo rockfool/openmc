@@ -805,7 +805,8 @@ class Integrator(ABC):
                 Results.save(self.operator, conc_list, res_list, [t, t + dt],
                              p, self._i_res + i, proc_time)
                 # print materials.xml 
-                self._update_materials_xml(i)
+                if self.operator.print_materials:
+                    self._update_materials_xml(i)
                 t += dt
 
             # Final simulation
@@ -814,7 +815,8 @@ class Integrator(ABC):
                          p, self._i_res + len(self), proc_time)
             self.operator.write_bos_data(len(self) + self._i_res)
             # Print materials.xml 
-            self._update_materials_xml(i + 1)
+            if self.operator.print_materials:
+                self._update_materials_xml(i + 1)
 
 
 class SIIntegrator(Integrator):
