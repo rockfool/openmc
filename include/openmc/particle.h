@@ -204,7 +204,7 @@ public:
   // Accessors for direction in local coordinates
   Direction& u_local() { return coord_[n_coord_ - 1].u; }
   const Direction& u_local() const { return coord_[n_coord_ - 1].u; }
-
+  
   //! resets all coordinate levels for the particle
   void clear();
 
@@ -271,6 +271,12 @@ public:
   // Particle coordinates before crossing a surface
   int n_coord_last_ {1};      //!< number of current coordinates
   std::vector<int> cell_last_;  //!< coordinates for all levels
+
+  // Particle coordinates for computing migration area
+  Position r_birth_;       // coordinates of birth position
+  Position r_phantom_;     // coordinates of phantom position
+  double x_start_in_mesh_; // starting x coordinate in the mesh when 
+                           // mesh filter is used
 
   // Energy data
   double E_;       //!< post-collision energy in eV

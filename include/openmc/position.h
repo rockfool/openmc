@@ -62,6 +62,9 @@ struct Position {
   inline double norm() const {
     return std::sqrt(x*x + y*y + z*z);
   }
+  inline double norm2() const {
+    return std::(x*x + y*y + z*z);
+  }
 
   //! Rotate the position based on a rotation matrix
   Position rotate(const std::vector<double>& rotation) const;

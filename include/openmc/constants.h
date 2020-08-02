@@ -353,7 +353,8 @@ enum TallyScore {
   SCORE_INVERSE_VELOCITY = -13, // flux-weighted inverse velocity
   SCORE_FISS_Q_PROMPT = -14, // prompt fission Q-value
   SCORE_FISS_Q_RECOV = -15, // recoverable fission Q-value
-  SCORE_DECAY_RATE = -16 // delayed neutron precursor decay rate
+  SCORE_DECAY_RATE = -16, // delayed neutron precursor decay rate
+  SCORE_IMA = -17 // incremental migration area
 };
 
 // Global tally parameters

@@ -120,6 +120,8 @@ std::string reaction_name(int mt)
     return "fission-q-prompt";
   } else if (mt == SCORE_FISS_Q_RECOV) {
     return "fission-q-recoverable";
+  } else if (mt == SCORE_IMA) { 
+    return "ima";
 
   // Normal ENDF-based reactions
   } else if (mt == TOTAL_XS) {

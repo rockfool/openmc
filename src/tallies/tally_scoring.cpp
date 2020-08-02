@@ -36,6 +36,7 @@ FilterBinIter::FilterBinIter(const Tally& tally, Particle* p)
     if (!match.bins_present_) {
       match.bins_.clear();
       match.weights_.clear();
+      match.x_starts_.clear(); // IMA
       model::tally_filters[i_filt]->get_all_bins(p, tally_.estimator_, match);
       match.bins_present_ = true;
     }
@@ -73,6 +74,7 @@ FilterBinIter::FilterBinIter(const Tally& tally, bool end,
       for (auto i = 0; i < model::tally_filters[i_filt]->n_bins(); ++i) {
         match.bins_.push_back(i);
         match.weights_.push_back(1.0);
+        match.x_starts_.push_back(1.0); // IMA
       }
       match.bins_present_ = true;
     }
@@ -496,6 +498,33 @@ score_general_ce(Particle* p, int i_tally, int start_index, int filter_index,
         }
       } else {
         score = flux;
+      }
+      break;
+
+    case SCORE_IMA:
+      // Currently the tally of incremental migration area only supprts
+      // track-length tallies
+      //
+      // Parameters only for IMA tallies with mesh filters
+      double total_distance;
+      double mesh_weight;
+      double ratio_start;
+      Position r_start;
+      Position r_end;
+      // Implementation of IMA tallies 
+      if(tally.mesh_filter_ != C_NONE) {
+       total_distance = (p->r() - p->r_last_).norm(); 
+       mesh_weight = flux/total_distance;
+       ratio_start = (p->x_start_in_mesh_ - p->r_last_[0])/ \
+                    (p->r()[0] - p->r_last_[0]);
+       r_start = p->r_last_ + (p->r() - p->r_last_) * ratio_start;
+       r_end = p->r_last_ + (p->r() - p->r_last_) * \
+                    (ratio_start + mesh_weight);
+       score = (r_end - p->r_phantom_).norm2() - \
+                    (r_start - p->r_phantom_).norm2();
+      } else {
+        score = (p->r() - p->r_phantom_).norm2() - \
+                (p->r_last_ - p->r_phantom_).norm2();
       }
       break;
 
@@ -2138,6 +2167,9 @@ score_tracklength_tally(Particle* p, double distance)
     for (; filter_iter != end; ++filter_iter) {
       auto filter_index = filter_iter.index_;
       auto filter_weight = filter_iter.weight_;
+      auto filter_x_starts = filter_iter.x_starts_; // IMA
+      
+      p->x_start_in_mesh = filter_x_starts; 
 
       // Loop over nuclide bins.
       if (tally.all_nuclides_) {

@@ -13,6 +13,8 @@ class FilterMatch
 public:
   std::vector<int> bins_;
   std::vector<double> weights_;
+  std::vector<double> x_starts_; // Special x-coordinates information needed for
+                                 // for IMA tally 
   int i_bin_;
   bool bins_present_ {false};
 };

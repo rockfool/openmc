@@ -117,6 +117,8 @@ Particle::from_source(const Bank* src)
   wgt_last_ = src->wgt;
   this->r() = src->r;
   this->u() = src->u;
+  r_birth_ = src->r_birth_;
+  r_phantom_ = src->r_phantom_;
   r_last_current_ = src->r;
   r_last_ = src->r;
   u_last_ = src->u;
