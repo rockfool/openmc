@@ -189,3 +189,28 @@ class ResultsList(list):
         for ix, res in enumerate(items):
             times[ix] = res.proc_time
         return times
+
+    def export_to_materials_xml(self, mats_list, burnup_index, nuc_with_data=None):
+        """
+        """
+        result = slef[burnup_index]
+        mat_file = openmc.Materials()
+        for i, mat in enumerate(mats_list):
+            id = mat.id
+            new_mat = openmc.Material(id)
+            mat_id = str(mat.id)
+            if mat_id in result.mat_to_ind.keys():
+                new_mat.volume = result.volume[str(mat_id)]
+                for nuc in result.nuc_to_ind.keys():
+                    atoms = result[0, str(mat_id), nuc]
+                    if atoms > 0.0:
+                        atoms_per_barn_cm = 1e-24 * atoms / new_mat.volume
+                        if nuc_with_data is None:
+                            new_mat.add_nuclide(nuc, atoms_per_barn_cm)
+                        elif nuc in nuc_with_data:
+                            new_mat.add_nuclide(nuc, atoms_per_barn_cm) 
+                mat_file.append(new_mat)
+            else:
+                mat_file.append(mat)
+        mat_file.export_to_xml()
+        
