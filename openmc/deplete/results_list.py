@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 
+import openmc 
 from .results import Results, _VERSION_RESULTS
 from openmc.checkvalue import check_filetype_version, check_value
 
@@ -193,7 +194,7 @@ class ResultsList(list):
     def export_to_materials_xml(self, mats_list, burnup_index, nuc_with_data=None):
         """
         """
-        result = slef[burnup_index]
+        result = self[burnup_index]
         mat_file = openmc.Materials()
         for i, mat in enumerate(mats_list):
             id = mat.id
