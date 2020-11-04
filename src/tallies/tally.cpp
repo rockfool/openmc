@@ -111,7 +111,7 @@ score_str_to_int(std::string score_str)
     return SCORE_FISS_Q_RECOV;
 
   if(score_str == "ima")
-    return SCORE_IMA
+    return SCORE_IMA;
 
   if (score_str == "heating")
     return HEATING;

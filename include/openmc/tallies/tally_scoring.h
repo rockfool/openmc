@@ -41,6 +41,7 @@ public:
 
   int index_ {1};
   double weight_ {1.};
+  double x_starts_ {0.0};
   
   std::vector<FilterMatch>& filter_matches_;
 

@@ -13,6 +13,7 @@
 #include "openmc/settings.h"
 #include "openmc/simulation.h"
 #include "openmc/string_utils.h"
+#include "openmc/position.h"
 #include "openmc/tallies/derivative.h"
 #include "openmc/tallies/filter.h"
 #include "openmc/tallies/filter_delayedgroup.h"
@@ -506,26 +507,26 @@ score_general_ce(Particle* p, int i_tally, int start_index, int filter_index,
       // track-length tallies
       //
       // Parameters only for IMA tallies with mesh filters
-      double total_distance;
-      double mesh_weight;
-      double ratio_start;
-      Position r_start;
-      Position r_end;
+      // double total_distance;
+      // double mesh_weight;
+      // double ratio_start;
+      // Position r_start;
+      // Position r_end;
       // Implementation of IMA tallies 
-      if(tally.mesh_filter_ != C_NONE) {
-        total_distance = (p->r() - p->r_last_).norm(); 
-        mesh_weight = flux/total_distance;
-        ratio_start = (p->x_start_in_mesh_ - p->r_last_[0])/ \
-                      (p->r()[0] - p->r_last_[0]);
-        r_start = p->r_last_ + (p->r() - p->r_last_) * ratio_start;
-        r_end = p->r_last_ + (p->r() - p->r_last_) * \
-                (ratio_start + mesh_weight);
-        score = (r_end - p->r_phantom_).norm2() - \
-                (r_start - p->r_phantom_).norm2();
-      } else {
+      // if(tally.filters[filter_index].type() == "mesh") {
+      //   total_distance = (p->r() - p->r_last_).norm(); 
+      //   mesh_weight = flux/total_distance;
+      //   ratio_start = (p->x_start_in_mesh_ - p->r_last_[0])/ \
+      //                 (p->r()[0] - p->r_last_[0]);
+      //   r_start = p->r_last_ + (p->r() - p->r_last_) * ratio_start;
+      //   r_end = p->r_last_ + (p->r() - p->r_last_) * \
+      //           (ratio_start + mesh_weight);
+      //   score = (r_end - p->r_phantom_).norm2() - \
+      //           (r_start - p->r_phantom_).norm2();
+      // } else {
          score = (p->r() - p->r_phantom_).norm2() - \
                 (p->r_last_ - p->r_phantom_).norm2();
-      }
+      // }
        break;
 
 
@@ -2170,7 +2171,8 @@ score_tracklength_tally(Particle* p, double distance)
       auto filter_weight = filter_iter.weight_;
       auto filter_x_starts = filter_iter.x_starts_; // IMA
       
-      p->x_start_in_mesh = filter_x_starts; 
+      // Update particle's starting x coordinate in the mesh  
+      p->x_start_in_mesh_ = filter_x_starts; 
 
       // Loop over nuclide bins.
       if (tally.all_nuclides_) {
