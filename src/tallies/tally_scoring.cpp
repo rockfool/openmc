@@ -513,20 +513,20 @@ score_general_ce(Particle* p, int i_tally, int start_index, int filter_index,
       Position r_end;
       // Implementation of IMA tallies 
       if(tally.mesh_filter_ != C_NONE) {
-       total_distance = (p->r() - p->r_last_).norm(); 
-       mesh_weight = flux/total_distance;
-       ratio_start = (p->x_start_in_mesh_ - p->r_last_[0])/ \
-                    (p->r()[0] - p->r_last_[0]);
-       r_start = p->r_last_ + (p->r() - p->r_last_) * ratio_start;
-       r_end = p->r_last_ + (p->r() - p->r_last_) * \
-                    (ratio_start + mesh_weight);
-       score = (r_end - p->r_phantom_).norm2() - \
-                    (r_start - p->r_phantom_).norm2();
+        total_distance = (p->r() - p->r_last_).norm(); 
+        mesh_weight = flux/total_distance;
+        ratio_start = (p->x_start_in_mesh_ - p->r_last_[0])/ \
+                      (p->r()[0] - p->r_last_[0]);
+        r_start = p->r_last_ + (p->r() - p->r_last_) * ratio_start;
+        r_end = p->r_last_ + (p->r() - p->r_last_) * \
+                (ratio_start + mesh_weight);
+        score = (r_end - p->r_phantom_).norm2() - \
+                (r_start - p->r_phantom_).norm2();
       } else {
-        score = (p->r() - p->r_phantom_).norm2() - \
+         score = (p->r() - p->r_phantom_).norm2() - \
                 (p->r_last_ - p->r_phantom_).norm2();
       }
-      break;
+       break;
 
 
     case SCORE_TOTAL:
@@ -2164,6 +2164,7 @@ score_tracklength_tally(Particle* p, double distance)
     if (filter_iter == end) continue;
 
     // Loop over filter bins.
+
     for (; filter_iter != end; ++filter_iter) {
       auto filter_index = filter_iter.index_;
       auto filter_weight = filter_iter.weight_;

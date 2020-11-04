@@ -63,7 +63,7 @@ struct Position {
     return std::sqrt(x*x + y*y + z*z);
   }
   inline double norm2() const {
-    return std::(x*x + y*y + z*z);
+    return x*x + y*y + z*z;
   }
 
   //! Rotate the position based on a rotation matrix

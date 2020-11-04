@@ -175,9 +175,9 @@ Surface::reflect(Position r, Direction u, Particle* p) const
   const double magnitude = n.dot(n);
   
   // Reflect direction for phantom used in ima score 
-  r_phantom = p->r_phantom_;
+  auto r_phantom = p->r_phantom_;
   const double d = -n.dot(r);
-  const double D = n.dot(r_phantom) + d
+  const double D = n.dot(r_phantom) + d;
   p->r_phantom_ -= (2.0 * D / magnitude) * n;
   
   // Reflect direction according to normal.
