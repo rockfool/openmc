@@ -506,27 +506,26 @@ score_general_ce(Particle* p, int i_tally, int start_index, int filter_index,
       // Currently the tally of incremental migration area only supprts
       // track-length tallies
       //
-      // Parameters only for IMA tallies with mesh filters
-      // double total_distance;
-      // double mesh_weight;
-      // double ratio_start;
-      // Position r_start;
-      // Position r_end;
-      // Implementation of IMA tallies 
-      // if(tally.filters[filter_index].type() == "mesh") {
-      //   total_distance = (p->r() - p->r_last_).norm(); 
-      //   mesh_weight = flux/total_distance;
-      //   ratio_start = (p->x_start_in_mesh_ - p->r_last_[0])/ \
-      //                 (p->r()[0] - p->r_last_[0]);
-      //   r_start = p->r_last_ + (p->r() - p->r_last_) * ratio_start;
-      //   r_end = p->r_last_ + (p->r() - p->r_last_) * \
-      //           (ratio_start + mesh_weight);
-      //   score = (r_end - p->r_phantom_).norm2() - \
-      //           (r_start - p->r_phantom_).norm2();
-      // } else {
+      // Implementation of IMA tallies
+      // std::cout<<tally.filters(filter_index)<<std::endl;
+      // if(model::tally_filters[tally.filters(filter_index)]->type() == "mesh") {
+      //    // Parameters only for IMA tallies with mesh filters
+      //    std::cout<<"error1"<<std::endl;
+      //    auto total_distance = (p->r() - p->r_last_).norm(); 
+      //    auto mesh_weight = flux/total_distance;
+      //    auto ratio_start = (p->x_start_in_mesh_ - p->r_last_[0])/ \
+      //                  (p->r()[0] - p->r_last_[0]);
+      //    auto r_start = p->r_last_ + (p->r() - p->r_last_) * ratio_start;
+      //    auto r_end = p->r_last_ + (p->r() - p->r_last_) * \
+      //            (ratio_start + mesh_weight);
+      //    std::cout<<"error2"<<std::endl;
+      //    score = (r_end - p->r_phantom_).norm2() - \
+      //            (r_start - p->r_phantom_).norm2();
+      //    std::cout<<"error3"<<std::endl;
+      //  } else {
          score = (p->r() - p->r_phantom_).norm2() - \
                 (p->r_last_ - p->r_phantom_).norm2();
-      // }
+      //  }
        break;
 
 
