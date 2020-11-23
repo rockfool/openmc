@@ -117,7 +117,7 @@ public:
   //! \return Outgoing direction of the ray
   virtual Direction reflect(Position r, Direction u, Particle* p) const;
 
-  virtual Direction diffuse_reflect(Position r, Direction u,
+  virtual Direction diffuse_reflect(Position r, Direction u, Particle* p,
     uint64_t* seed) const;
 
   //! Evaluate the equation describing the surface.

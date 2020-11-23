@@ -185,7 +185,8 @@ Surface::reflect(Position r, Direction u, Particle* p) const
 }
 
 Direction
-Surface::diffuse_reflect(Position r, Direction u, uint64_t* seed) const
+Surface::diffuse_reflect(Position r, Direction u, Particle* p, 
+  uint64_t* seed) const
 {
   // Diffuse reflect direction according to the normal.
   // cosine distribution
@@ -193,7 +194,14 @@ Surface::diffuse_reflect(Position r, Direction u, uint64_t* seed) const
   Direction n = this->normal(r);
   n /= n.norm();
   const double projection = n.dot(u);
-
+  
+  // Handle phantom for IMA tally
+  const double magnitude = n.dot(n);
+  auto r_phantom = p->r_phantom_;
+  const double d = -n.dot(r);
+  const double D = n.dot(r_phantom) + d;
+  p->r_phantom_ -= (2.0 * D / magnitude) * n;
+  
   // sample from inverse function, u=sqrt(rand) since p(u)=2u, so F(u)=u^2
   const double mu = (projection>=0.0) ?
                   -std::sqrt(prn(seed)) : std::sqrt(prn(seed));
