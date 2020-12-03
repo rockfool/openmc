@@ -580,4 +580,6 @@ class SILEQIIntegrator(SIIntegrator):
                 inter_conc, inputs, dt, matrix_func=leqi_f4)
             proc_time += time1 + time2
 
+        self._prev_rates = res_bar.rates 
+        
         return proc_time, [eos_conc, inter_conc], [res_bar]
