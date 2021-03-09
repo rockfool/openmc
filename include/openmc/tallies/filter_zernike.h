@@ -117,6 +117,7 @@ public:
     n_counter_ += 1;
     n_bins_ = v_n_bins_[n_counter_];
     if (n_counter_ >= len_) n_counter_ = 0;
+    std::cout << n_counter_ << std::endl;
   } 
 
   //----------------------------------------------------------------------------
