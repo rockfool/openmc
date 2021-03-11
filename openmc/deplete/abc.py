@@ -803,8 +803,10 @@ class Integrator(ABC):
                 
                 # FETs Plot some results into pdfs 
                 if self.operator.fet_deplete is not None:
-                    #self._export_to_pdf(i)
-                    pass
+                    if self.operator.fet_deplete['print']:
+                        self._export_to_pdf(i)
+                    else:
+                        pass
                 
                 # FETs rename materials.xml for backup for next step
                 self._update_materials_xml(i)
@@ -819,8 +821,10 @@ class Integrator(ABC):
             
             #FETs 
             if self.operator.fet_deplete is not None:
-                #self._export_to_pdf(self._i_res)
-                pass
+                if self.operator.fet_deplete['print']:
+                    self._export_to_pdf(self._i_res)
+                else:
+                    pass
 
 
 class SIIntegrator(Integrator):

@@ -681,7 +681,7 @@ class Settings(object):
     @fet_deplete.setter
     def fet_deplete(self, fet):
         cv.check_type('fet deplete settings', fet, Mapping)
-        keys = ('enable', 'order', 'radius', 'name')
+        keys = ('enable', 'order', 'radius', 'name', 'offset', 'print')
         for key, value in fet.items():
             cv.check_value('fet deplete dictionary key', key, keys)
             if key == 'enable':
@@ -697,6 +697,12 @@ class Settings(object):
             elif key == 'name':
                 name = 'fet deplete name'
                 cv.check_type(name, value, str)
+            elif key == 'offset':
+                name = 'fet deplete offset'
+                cv.check_type(name, value, Iterable)
+            elif key == 'print':
+                name = 'fet deplete print'
+                cv.check_type(name, value, bool)
         self._fet_deplete = fet
 
     @volume_calculations.setter
