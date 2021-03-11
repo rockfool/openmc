@@ -62,27 +62,58 @@ class DirectReactionRateHelper(ReactionRateHelper):
             Reaction identifiers, e.g. ``"(n, fission)"``,
             ``"(n, gamma)"``, needed for the reaction rate tally.
         """
-        self._rate_tally = Tally()
-        self._rate_tally.writable = True 
-        self._rate_tally.scores = scores
-        self._rate_tally.filters = [MaterialFilter(materials)]
-        # FETs 
+        if fet_deplete is None:
+            self._rate_tally = Tally()
+            self._rate_tally.writable = True 
+            self._rate_tally.scores = scores
+            self._rate_tally.filters = [MaterialFilter(materials)]
+        #
+        # FETs for materials number over 1
         if fet_deplete is not None:
-            temp_loc = {}
-            temp_loc['x'] = 0.0
-            temp_loc['y'] = 0.0
-            temp_loc['r'] = fet_deplete['radius']
-            #
-            if fet_deplete['name'] == 'zernike':
-                zer_filter = ZernikeFilter()
-                zer_filter.order = fet_deplete['order']
-                zer_filter.params = temp_loc
-                self._rate_tally.filters += [zer_filter]
-            elif fet_deplete['name'] == 'zernike1d':
-                zer1d_filter = ZernikeRadialFilter()
-                zer1d_filter.order = fet_deplete['order']
-                zer1d_filter.params = temp_loc
-                self._rate_tally.filters += [zer1d_filter]
+            print(len(materials), 'in helpers.py') 
+            self._rate_tally = [Tally() for mat in materials]
+            for i, mat in enumerate(materials):
+                self._rate_tally[i].writable = True
+                self._rate_tally[i].scores = scores
+                self._rate_tally[i].filters = [MaterialFilter([mat])]
+                if fet_deplete is not None:
+                    temp_loc = {}
+                    temp_loc['x'], temp_loc['y'] = fet_deplete['offset'][i] 
+                    temp_loc['r'] = fet_deplete['radius']
+                #
+                if fet_deplete['name'] == 'zernike':
+                    zer_filter = ZernikeFilter()
+                    zer_filter.order = fet_deplete['order']
+                    zer_filter.params = temp_loc
+                    self._rate_tally[i].filters += [zer_filter]
+                elif fet_deplete['name'] == 'zernike1d':
+                    zer1d_filter = ZernikeRadialFilter()
+                    zer1d_filter.order = fet_deplete['order']
+                    zer1d_filter.params = temp_loc
+                    self._rate_tally[i].filters += [zer1d_filter]
+        #
+        #self._rate_tally = Tally()
+        #self._rate_tally.writable = True 
+        #self._rate_tally.scores = scores
+        #self._rate_tally.filters = [MaterialFilter(materials)]
+        # 
+        # FETs 
+        # if fet_deplete is not None:
+        #     temp_loc = {}
+        #     temp_loc['x'] = 0.0
+        #     temp_loc['y'] = 0.0
+        #     temp_loc['r'] = fet_deplete['radius']
+        #     #
+        #     if fet_deplete['name'] == 'zernike':
+        #         zer_filter = ZernikeFilter()
+        #         zer_filter.order = fet_deplete['order']
+        #         zer_filter.params = temp_loc
+        #         self._rate_tally.filters += [zer_filter]
+        #     elif fet_deplete['name'] == 'zernike1d':
+        #         zer1d_filter = ZernikeRadialFilter()
+        #         zer1d_filter.order = fet_deplete['order']
+        #         zer1d_filter.params = temp_loc
+        #         self._rate_tally.filters += [zer1d_filter]
                     
 
     def get_material_rates(self, mat_id, nuc_index, react_index, fet_deplete=None):
@@ -112,18 +143,21 @@ class DirectReactionRateHelper(ReactionRateHelper):
                 mp = zer.num_poly(fet_deplete['order'])
             elif fet['name']=='zernike1d':
                 mp = zer.num_poly1d(fet_deplete['order'])
-        #              
+        #FETs               
         self._results_cache.fill(0.0)
-        
-        full_tally_res = self._rate_tally.results[mat_id, :, 1]  
-        for i_tally, (i_nuc, i_react) in enumerate(
-                product(nuc_index, react_index)):
-            self._results_cache[i_nuc, i_react] = full_tally_res[i_tally]
+        if fet_deplete is None:
+            full_tally_res = self._rate_tally.results[mat_id, :, 1] 
+            
+            for i_tally, (i_nuc, i_react) in enumerate(
+                    product(nuc_index, react_index)):
+                self._results_cache[i_nuc, i_react] = full_tally_res[i_tally]
         #FETs 
         if fet_deplete is not None:
+            #print(self._rate_tally[mat_id].results)
             for i in range(mp):
                 #print(self._rate_tally.results[i * mat_id, :, 1])
-                full_tally_res = self._rate_tally.results[mp * mat_id + i, :, 1] 
+                #full_tally_res = self._rate_tally.results[mp * mat_id + i, :, 1] 
+                full_tally_res = self._rate_tally[mat_id].results[i, :, 1] 
                 for i_tally, (i_nuc, i_react) in enumerate(
                     product(nuc_index, react_index)):
                     self._results_cache[i_nuc, i_react * mp + i] = full_tally_res[i_tally]

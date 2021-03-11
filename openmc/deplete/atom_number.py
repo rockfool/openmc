@@ -274,7 +274,9 @@ class AtomNumber(object):
             mat = self.index_mat[mat]
          
         if fet_deplete is not None:
-            print(mat, self.n_nuc_burn * mp) # FETs  
+            #print(mat, self.n_nuc_burn * mp) # FETs
+            #print(mat, self.n_nuc_burn, mp, ' in atom_number.py') # FETs testing
+            pass             
             
         self[mat, :self.n_nuc_burn * mp] = val
         

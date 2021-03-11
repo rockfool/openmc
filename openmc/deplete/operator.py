@@ -282,7 +282,7 @@ class Operator(TransportOperator):
         # Update material compositions and tally nuclides
         self._update_materials() # FETs 
         nuclides = self._get_tally_nuclides(fet_deplete=self.fet_deplete) # FETs 
-        self._rate_helper.nuclides = nuclides # FETs no change
+        self._rate_helper.nuclides = nuclides # FETs 
         self._energy_helper.nuclides = nuclides # FETs no change
         self._yield_helper.update_tally_nuclides(nuclides) #FETs no change
 
@@ -506,6 +506,7 @@ class Operator(TransportOperator):
         materials = [openmc.lib.materials[int(i)]
                      for i in self.burnable_mats]
         # FETs 
+        #nuclides = self._burnable_nucs
         self._rate_helper.generate_tallies(materials, self.chain.reactions, 
                                            fet_deplete=self.fet_deplete)
         self._energy_helper.prepare(
@@ -788,7 +789,7 @@ class Operator(TransportOperator):
         # Reduce energy produced from all processes
         # J / s / source neutron
         energy = comm.allreduce(self._energy_helper.energy)
-        print(energy)
+        print(energy, "in operator.py")
 
         # Guard against divide by zero
         if energy == 0:

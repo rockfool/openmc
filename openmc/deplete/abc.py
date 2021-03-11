@@ -247,7 +247,7 @@ class ReactionRateHelper(ABC):
                 mp = zer.num_poly1d(fet_deplete['order'])
         #
         self._nuclides = None
-        self._rate_tally = None
+        self._rate_tally = None # FETs 
         self._results_cache = empty((n_nucs, n_react * mp)) # FETs 
 
     @abstractmethod
@@ -263,7 +263,14 @@ class ReactionRateHelper(ABC):
     def nuclides(self, nuclides):
         check_type("nuclides", nuclides, list, str)
         self._nuclides = nuclides
-        self._rate_tally.nuclides = nuclides
+        #self._rate_tally.nuclides = nuclides
+        # FETs 
+        # print(self._rate_tally, 'in abc.py')
+        # print(len(self._rate_tally), 'is the len')
+        if len(self._rate_tally) >0 :
+            for i, _ in enumerate(self._rate_tally):
+                self._rate_tally[i].nuclides = nuclides
+                #print(self._rate_tally[i].nuclides)
 
     @abstractmethod
     def get_material_rates(self, mat_id, nuc_index, react_index):
@@ -796,7 +803,8 @@ class Integrator(ABC):
                 
                 # FETs Plot some results into pdfs 
                 if self.operator.fet_deplete is not None:
-                    self._export_to_pdf(i)
+                    #self._export_to_pdf(i)
+                    pass
                 
                 # FETs rename materials.xml for backup for next step
                 self._update_materials_xml(i)
@@ -811,7 +819,8 @@ class Integrator(ABC):
             
             #FETs 
             if self.operator.fet_deplete is not None:
-                self._export_to_pdf(self._i_res)
+                #self._export_to_pdf(self._i_res)
+                pass
 
 
 class SIIntegrator(Integrator):
