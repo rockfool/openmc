@@ -395,7 +395,8 @@ class Material(IDManagerMixin):
         self._convert_to_distrib_comps = True
     
     # cvmt 
-    def add_nuclide(self, nuclide, percent, percent_type='ao', poly=None, zernike=None, zernike1d=None ):
+    def add_nuclide(self, nuclide, percent, percent_type='ao', 
+                    poly=None, zernike=None, zernike1d=None):
         """Add a nuclide to the material
 
         Parameters
@@ -462,6 +463,17 @@ class Material(IDManagerMixin):
         else:
             self._nuclides.append((nuclide, percent, percent_type))
     
+        
+    # FETs    
+    def add_nuclide_fet(self, nuclide, val, percent_type='ao', fet_deplete=None):
+        """
+        Add a nuclide with FETs coeffs
+        """
+        if fet_deplete is not None:
+            newval = [fet_deplete['radius']] + [i for i in val]  
+            self._nuclides.append((nuclide, val[0], percent_type, newval, fet_deplete['name']))
+        
+        
     def update_nuclide(self, nuclide, val, fet_deplete=None):
         """Update a nuclide with FETs coeffs
         """
@@ -486,6 +498,18 @@ class Material(IDManagerMixin):
                 else:
                     percent = val
                     self._nuclides.append((nuclide, percent, percent_type))
+    
+    
+    def find_nuclide(self, nuclide):
+        """ Find the location of the nuclide in material
+            If none return -1
+        """        
+        cv.check_type('nuclide', nuclide, str)
+        for loc_nuc in range(len(self._nuclides)):
+            nuc = self._nuclides[loc_nuc]
+            if nuclide == nuc[0]:
+                return loc_nuc
+        return -1 
         
     
     def remove_nuclide(self, nuclide):

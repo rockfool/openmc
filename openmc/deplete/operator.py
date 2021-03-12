@@ -617,14 +617,31 @@ class Operator(TransportOperator):
                 mat = materials[i]
                 for mat_i in number.materials:
                     if str(mat.id) == mat_i:
-                        for j in range(len(mat.nuclides)):
-                            nuc = mat.nuclides[j]
-                            nuc_name = mat.nuclides[j][0]
+                        # change density unit to "sum"
+                        # materials[i].density_units = "sum"
+                        #for j in range(len(mat.nuclides)):
+                        #    nuc = mat.nuclides[j]
+                        #    nuc_name = mat.nuclides[j][0]
+                        #    val = number.get_atom_density(str(mat.id), nuc_name, fet_deplete=self.fet_deplete) 
+                        #    val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
+                        #    materials[i].update_nuclide(nuc_name, val, fet_deplete=self.fet_deplete)
+                        for nuc_name in number.nuclides:
                             val = number.get_atom_density(str(mat.id), nuc_name, fet_deplete=self.fet_deplete) 
                             val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
-                            materials[i].update_nuclide(nuc_name, val, fet_deplete=self.fet_deplete)
+                            loc_nuc = materials[i].find_nuclide(nuc_name)
+                            #print(loc_nuc, nuc_name)
+                            if loc_nuc == -1:
+                                if self.fet_deplete is None:
+                                    if val > 1.0e-50: # val[0], val.any() or val.all()
+                                        materials[i].add_nuclide(nuc_name, val)
+                                else:
+                                    if val.any() > 1.0e-50:
+                                        materials[i].add_nuclide_fet(nuc_name, val, fet_deplete=self.fet_deplete)
+                            else:
+                                materials[i].update_nuclide(nuc_name, val, fet_deplete=self.fet_deplete)
                         #break                      
             materials.export_to_xml()
+        
         
     def _generate_materials_xml(self):
         """Creates materials.xml from self.number.

@@ -762,12 +762,18 @@ class Integrator(ABC):
         fet_deplete = self.operator.fet_deplete
         order = fet_deplete['order']
         radius = fet_deplete['radius']
-        for mat in number.materials:
-            for nuc in number.nuclides:
-                coeff = number.get_atom_density(mat, nuc, fet_deplete=fet_deplete)
-                filename = str(stage) + "-" + str(mat) + "-" + str(nuc) + ".pdf"
-                zer_file = zer.ZernikePolynomial(order, coeff, radius, sqrt_normed=False)
-                zer_file.plot_disk(20, 32, filename)
+        if fet_deplete['print_fuel'] is None:
+            print_fuel = [i for i in range(len(number.materials))]
+        else:
+            print_fuel = fet_deplete['print_fuel']
+        for i, mat in enumerate(number.materials):
+            if i in print_fuel:
+                for nuc in number.nuclides:
+                    if nuc in self.operator._burnable_nucs:
+                        coeff = number.get_atom_density(mat, nuc, fet_deplete=fet_deplete)
+                        filename = str(stage) + "-" + str(mat) + "-" + str(nuc) + ".pdf"
+                        zer_file = zer.ZernikePolynomial(order, coeff, radius, sqrt_normed=False)
+                        zer_file.plot_disk(20, 32, filename)
         # FETs 
     
     def _update_materials_xml(self, stage):
@@ -822,10 +828,11 @@ class Integrator(ABC):
             #FETs 
             if self.operator.fet_deplete is not None:
                 if self.operator.fet_deplete['print']:
-                    self._export_to_pdf(self._i_res)
+                    self._export_to_pdf(i + 1)
                 else:
                     pass
-
+            self._update_materials_xml(i + 1)
+            
 
 class SIIntegrator(Integrator):
     """Abstract class for the Stochastic Implicit Euler integrators
