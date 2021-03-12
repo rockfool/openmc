@@ -757,6 +757,16 @@ class Integrator(ABC):
         return (self.operator.prev_res[-1].time[-1],
                 len(self.operator.prev_res) - 1)
     
+    def _gnd_rename(self, nuc_name):
+        orig_name = nuc_name
+        if '-' in nuc_name:
+            nuc_name = nuc_name.replace('-', '')
+            nuc_name = nuc_name.replace('Nat', '0')
+            if nuc_name.endswith('m'):
+                nuc_name = nuc_name[:-1] + '_m1'
+        return  nuc_name   
+    
+    
     def _export_to_pdf(self, stage):
         number = self.operator.number
         fet_deplete = self.operator.fet_deplete
@@ -766,10 +776,14 @@ class Integrator(ABC):
             print_fuel = [i for i in range(len(number.materials))]
         else:
             print_fuel = fet_deplete['print_fuel']
+        if fet_deplete['print_nuclide'] is None:
+            print_nuc = self.operator._burnable_nucs
+        else:
+            print_nuc = [self._gnd_rename(i) for i in fet_deplete['print_nuclide']]       
         for i, mat in enumerate(number.materials):
             if i in print_fuel:
                 for nuc in number.nuclides:
-                    if nuc in self.operator._burnable_nucs:
+                    if nuc in print_nuc:
                         coeff = number.get_atom_density(mat, nuc, fet_deplete=fet_deplete)
                         filename = str(stage) + "-" + str(mat) + "-" + str(nuc) + ".pdf"
                         zer_file = zer.ZernikePolynomial(order, coeff, radius, sqrt_normed=False)

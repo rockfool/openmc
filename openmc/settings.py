@@ -681,7 +681,8 @@ class Settings(object):
     @fet_deplete.setter
     def fet_deplete(self, fet):
         cv.check_type('fet deplete settings', fet, Mapping)
-        keys = ('enable', 'order', 'radius', 'name', 'offset', 'print', 'print_fuel')
+        keys = ('enable', 'order', 'radius', 'name', 'offset', 'print', 
+                'print_fuel', 'print_nuclide')
         for key, value in fet.items():
             cv.check_value('fet deplete dictionary key', key, keys)
             if key == 'enable':
@@ -705,6 +706,9 @@ class Settings(object):
                 cv.check_type(name, value, bool)
             elif key == 'print_fuel':
                 name = 'fet deplete print fuel region'
+                cv.check_type(name, value, Iterable)
+            elif key == 'print_nuclide':
+                name = 'fet deplete print nuclide'
                 cv.check_type(name, value, Iterable)
         self._fet_deplete = fet
 
