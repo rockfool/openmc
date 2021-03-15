@@ -267,10 +267,13 @@ class ReactionRateHelper(ABC):
         # FETs 
         # print(self._rate_tally, 'in abc.py')
         # print(len(self._rate_tally), 'is the len')
-        if len(self._rate_tally) >0 :
-            for i, _ in enumerate(self._rate_tally):
-                self._rate_tally[i].nuclides = nuclides
-                #print(self._rate_tally[i].nuclides)
+        if not isinstance(self._rate_tally, Iterable):
+            self._rate_tally.nuclides = nuclides
+        else: 
+            if len(self._rate_tally) >0 :
+                for i, _ in enumerate(self._rate_tally):
+                    self._rate_tally[i].nuclides = nuclides
+                    #print(self._rate_tally[i].nuclides)
 
     @abstractmethod
     def get_material_rates(self, mat_id, nuc_index, react_index):
