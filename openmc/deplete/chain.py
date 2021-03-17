@@ -548,7 +548,7 @@ class Chain(object):
                                                     yield_val = y * path_rate
                                                     if any(yield_val): # FETs != 0.0:
                                                         k = self.nuclide_dict[product]
-                                                        matrix[k, i] += yield_val[pp] #FETs 
+                                                        #matrix[k, i] += yield_val[pp] #FETs 
                                                         matrix[k * np + pp, i * np + p] += weight_rate * yield_val[pp] #FETs
                                                 
                 
