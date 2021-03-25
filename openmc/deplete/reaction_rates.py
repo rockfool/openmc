@@ -82,7 +82,7 @@ class ReactionRates(np.ndarray):
         else:
             obj.index_mat = {mat: i for i, mat in enumerate(local_mats)}
             obj.index_nuc = {nuc: i for i, nuc in enumerate(nuclides)}
-            obj.index_rx = {rx: i for i, rx in enumerate(reactions)}
+            obj.index_rx = {rx: i for i, rx in enumerate(reactions)} #FETs i*mp?
              
             
         return obj

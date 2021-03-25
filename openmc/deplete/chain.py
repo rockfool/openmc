@@ -463,21 +463,22 @@ class Chain(object):
                 # Decay paths
                 # Loss
                 decay_constant = math.log(2) / nuc.half_life
-
-                if decay_constant != 0.0:
-                    for p in range(np): # FETs
+                
+                # FETs
+                for p in range(np): 
+                    if decay_constant != 0.0:
+                        # FETs
                         matrix[i * np + p, i * np + p] -= decay_constant
 
-                # Gain
-                for _, target, branching_ratio in nuc.decay_modes:
-                    # Allow for total annihilation for debug purposes
-                    if target != 'Nothing':
-                        branch_val = branching_ratio * decay_constant
-
-                        if branch_val != 0.0:
-                            k = self.nuclide_dict[target]
-                            # FETs
-                            for p in range(np):
+                    # Gain
+                    for _, target, branching_ratio in nuc.decay_modes:
+                        # Allow for total annihilation for debug purposes
+                        if target != 'Nothing':
+                            branch_val = branching_ratio * decay_constant
+                            
+                            if branch_val != 0.0:
+                                k = self.nuclide_dict[target]
+                                # FETs
                                 matrix[k * np + p, i * np + p] += branch_val
                         
             if mp is None:
@@ -545,11 +546,12 @@ class Chain(object):
                                                     matrix[k * np + pp, i * np + p] += weight_rate * br # FETs
                                             else:
                                                 for product, y in fission_yields[nuc.name].items():
-                                                    yield_val = y * path_rate
-                                                    if any(yield_val): # FETs != 0.0:
+                                                    #yield_val = y * path_rate
+                                                    yield_val = y * weight_rate
+                                                    if yield_val!= 0.0: # FETs != 0.0:
                                                         k = self.nuclide_dict[product]
-                                                        #matrix[k, i] += yield_val[pp] #FETs 
-                                                        matrix[k * np + pp, i * np + p] += weight_rate * yield_val[pp] #FETs
+                                                        #matrix[k, i] += yield_val #FETs 
+                                                        matrix[k * np + pp, i * np + p] +=  yield_val #FETs
                                                 
                 
                     # Clear set of reactions
@@ -561,17 +563,17 @@ class Chain(object):
         dict.update(matrix_dok, matrix)
         #print(n) #FETs testing 
         # Printing for FETs test
-        #with open("matrix.txt", 'w') as file: 
-        #    tt = matrix_dok.toarray()        
-        #    for i in range(len(tt)):
-        #        print(tt[i], '\t', file=file)
+        with open("matrix.txt", 'w') as file: 
+            tt = matrix_dok.toarray()        
+            for i in range(len(tt)):
+                print(tt[i], '\t', file=file)
         ## 
-        #with open("rate_result.txt", 'w') as res:
-        #    for i, nuc in enumerate(self.nuclides):
-        #        if nuc.name in rates.index_nuc:
-        #            nuc_ind = rates.index_nuc[nuc.name]
-        #            nuc_rates = rates[nuc_ind, :]
-        #            print(nuc.name, nuc_rates, file=res)
+        with open("rate_result.txt", 'w') as res:
+            for i, nuc in enumerate(self.nuclides):
+                if nuc.name in rates.index_nuc:
+                    nuc_ind = rates.index_nuc[nuc.name]
+                    nuc_rates = rates[nuc_ind, :]
+                    print(nuc.name, nuc_rates, file=res)
         #        
         return matrix_dok.tocsr()
 

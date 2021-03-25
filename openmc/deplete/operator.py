@@ -820,6 +820,14 @@ class Operator(TransportOperator):
         # Scale reaction rates to obtain units of reactions/sec
         rates *= power / energy
         
+        # Jiankai testing
+        for i, mat in enumerate(self.local_mats):
+            mat_index = self._mat_index_map[mat]
+            for nuc, i_nuc_results in zip(nuclides, nuc_ind):
+                i_nuc = self.number.index_nuc[nuc] 
+                print(mat, nuc, rates[i][i_nuc][:])
+        # end
+        
         # Store new fission yields on the chain
         self.chain.fission_yields = fission_yields
         
