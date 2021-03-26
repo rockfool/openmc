@@ -169,12 +169,12 @@ class CECMIntegrator(Integrator):
             Eigenvalue and reaction rates from transport simulations
         """
         # deplete across first half of inteval
-        time0, x_middle = timed_deplete(self.chain, conc, rates, dt / 2)
+        time0, x_middle = timed_deplete(self.chain, conc, rates, dt / 2, fet_deplete=self.operator.fet_deplete) #FETs
         res_middle = self.operator(x_middle, power)
 
         # deplete across entire interval with BOS concentrations,
         # MOS reaction rates
-        time1, x_end = timed_deplete(self.chain, conc, res_middle.rates, dt)
+        time1, x_end = timed_deplete(self.chain, conc, res_middle.rates, dt, fet_deplete=self.operator.fet_deplete) #FETs
 
         return time0 + time1, [x_middle, x_end], [res_middle]
 
@@ -261,26 +261,26 @@ class CF4Integrator(Integrator):
         """
         # Step 1: deplete with matrix 1/2*A(y0)
         time1, conc_eos1 = timed_deplete(
-            self.chain, bos_conc, bos_rates, dt, matrix_func=cf4_f1)
+            self.chain, bos_conc, bos_rates, dt, matrix_func=cf4_f1, fet_deplete=self.operator.fet_deplete) #FETs
         res1 = self.operator(conc_eos1, power)
 
         # Step 2: deplete with matrix 1/2*A(y1)
         time2, conc_eos2 = timed_deplete(
-            self.chain, bos_conc, res1.rates, dt, matrix_func=cf4_f1)
+            self.chain, bos_conc, res1.rates, dt, matrix_func=cf4_f1, fet_deplete=self.operator.fet_deplete) #FETs
         res2 = self.operator(conc_eos2, power)
 
         # Step 3: deplete with matrix -1/2*A(y0)+A(y2)
         list_rates = list(zip(bos_rates, res2.rates))
         time3, conc_eos3 = timed_deplete(
-            self.chain, conc_eos1, list_rates, dt, matrix_func=cf4_f2)
+            self.chain, conc_eos1, list_rates, dt, matrix_func=cf4_f2, fet_deplete=self.operator.fet_deplete) #FETs
         res3 = self.operator(conc_eos3, power)
 
         # Step 4: deplete with two matrix exponentials
         list_rates = list(zip(bos_rates, res1.rates, res2.rates, res3.rates))
         time4, conc_inter = timed_deplete(
-            self.chain, bos_conc, list_rates, dt, matrix_func=cf4_f3)
+            self.chain, bos_conc, list_rates, dt, matrix_func=cf4_f3, fet_deplete=self.operator.fet_deplete) #FETs
         time5, conc_eos5 = timed_deplete(
-            self.chain, conc_inter, list_rates, dt, matrix_func=cf4_f4)
+            self.chain, conc_inter, list_rates, dt, matrix_func=cf4_f4, fet_deplete=self.operator.fet_deplete) #FETs
 
         return (time1 + time2 + time3 + time4 + time5,
                 [conc_eos1, conc_eos2, conc_eos3, conc_eos5],
@@ -367,17 +367,17 @@ class CELIIntegrator(Integrator):
             simulation
         """
         # deplete to end using BOS rates
-        proc_time, conc_ce = timed_deplete(self.chain, bos_conc, rates, dt)
+        proc_time, conc_ce = timed_deplete(self.chain, bos_conc, rates, dt, fet_deplete=self.operator.fet_deplete)
         res_ce = self.operator(conc_ce, power)
 
         # deplete using two matrix exponentials
         list_rates = list(zip(rates, res_ce.rates))
 
         time_le1, conc_inter = timed_deplete(
-            self.chain, bos_conc, list_rates, dt, matrix_func=celi_f1)
+            self.chain, bos_conc, list_rates, dt, matrix_func=celi_f1, fet_deplete=self.operator.fet_deplete)
 
         time_le2, conc_end = timed_deplete(
-            self.chain, conc_inter, list_rates, dt, matrix_func=celi_f2)
+            self.chain, conc_inter, list_rates, dt, matrix_func=celi_f2, fet_deplete=self.operator.fet_deplete)
 
         return proc_time + time_le1 + time_le1, [conc_ce, conc_end], [res_ce]
 
@@ -463,23 +463,23 @@ class EPCRK4Integrator(Integrator):
 
         # Step 1: deplete with matrix A(y0) / 2
         time1, conc1 = timed_deplete(
-            self.chain, conc, rates, dt, matrix_func=rk4_f1)
+            self.chain, conc, rates, dt, matrix_func=rk4_f1, fet_deplete=self.operator.fet_deplete)
         res1 = self.operator(conc1, power)
 
         # Step 2: deplete with matrix A(y1) / 2
         time2, conc2 = timed_deplete(
-            self.chain, conc, res1.rates, dt, matrix_func=rk4_f1)
+            self.chain, conc, res1.rates, dt, matrix_func=rk4_f1, fet_deplete=self.operator.fet_deplete)
         res2 = self.operator(conc2, power)
 
         # Step 3: deplete with matrix A(y2)
         time3, conc3 = timed_deplete(
-            self.chain, conc, res2.rates, dt)
+            self.chain, conc, res2.rates, dt, fet_deplete=self.operator.fet_deplete)
         res3 = self.operator(conc3, power)
 
         # Step 4: deplete with matrix built from weighted rates
         list_rates = list(zip(rates, res1.rates, res2.rates, res3.rates))
         time4, conc4 = timed_deplete(
-            self.chain, conc, list_rates, dt, matrix_func=rk4_f4)
+            self.chain, conc, list_rates, dt, matrix_func=rk4_f4, fet_deplete=self.operator.fet_deplete)
 
         return (time1 + time2 + time3 + time4, [conc1, conc2, conc3, conc4],
                 [res1, res2, res3])
@@ -592,9 +592,9 @@ class LEQIIntegrator(Integrator):
             self._prev_rates, bos_res.rates, repeat(prev_dt), repeat(dt)))
 
         time1, conc_inter = timed_deplete(
-            self.chain, bos_conc, le_inputs, dt, matrix_func=leqi_f1)
+            self.chain, bos_conc, le_inputs, dt, matrix_func=leqi_f1, fet_deplete=self.operator.fet_deplete)
         time2, conc_eos0 = timed_deplete(
-            self.chain, conc_inter, le_inputs, dt, matrix_func=leqi_f2)
+            self.chain, conc_inter, le_inputs, dt, matrix_func=leqi_f2, fet_deplete=self.operator.fet_deplete)
 
         res_inter = self.operator(conc_eos0, power)
 
@@ -603,9 +603,9 @@ class LEQIIntegrator(Integrator):
             repeat(prev_dt), repeat(dt)))
 
         time3, conc_inter = timed_deplete(
-            self.chain, bos_conc, qi_inputs, dt, matrix_func=leqi_f3)
+            self.chain, bos_conc, qi_inputs, dt, matrix_func=leqi_f3, fet_deplete=self.operator.fet_deplete)
         time4, conc_eos1 = timed_deplete(
-            self.chain, conc_inter, qi_inputs, dt, matrix_func=leqi_f4)
+            self.chain, conc_inter, qi_inputs, dt, matrix_func=leqi_f4, fet_deplete=self.operator.fet_deplete)
 
         # store updated rates
         self._prev_rates = copy.deepcopy(bos_res.rates)
@@ -691,7 +691,7 @@ class SICELIIntegrator(SIIntegrator):
             simulations
         """
         proc_time, eos_conc = timed_deplete(
-            self.chain, bos_conc, bos_rates, dt)
+            self.chain, bos_conc, bos_rates, dt, fet_deplete=self.operator.fet_deplete)
         inter_conc = copy.deepcopy(eos_conc)
 
         # Begin iteration
@@ -707,9 +707,9 @@ class SICELIIntegrator(SIIntegrator):
 
             list_rates = list(zip(bos_rates, res_bar.rates))
             time1, inter_conc = timed_deplete(
-                self.chain, bos_conc, list_rates, dt, matrix_func=celi_f1)
+                self.chain, bos_conc, list_rates, dt, matrix_func=celi_f1, fet_deplete=self.operator.fet_deplete)
             time2, inter_conc = timed_deplete(
-                self.chain, inter_conc, list_rates, dt, matrix_func=celi_f2)
+                self.chain, inter_conc, list_rates, dt, matrix_func=celi_f2, fet_deplete=self.operator.fet_deplete)
             proc_time += time1 + time2
 
         # end iteration
@@ -808,9 +808,9 @@ class SILEQIIntegrator(SIIntegrator):
         inputs = list(zip(self._prev_rates, bos_rates,
                           repeat(prev_dt), repeat(dt)))
         proc_time, inter_conc = timed_deplete(
-            self.chain, bos_conc, inputs, dt, matrix_func=leqi_f1)
+            self.chain, bos_conc, inputs, dt, matrix_func=leqi_f1, fet_deplete=self.operator.fet_deplete)
         time1, eos_conc = timed_deplete(
-            self.chain, inter_conc, inputs, dt, matrix_func=leqi_f2)
+            self.chain, inter_conc, inputs, dt, matrix_func=leqi_f2, fet_deplete=self.operator.fet_deplete)
 
         proc_time += time1
         inter_conc = copy.deepcopy(eos_conc)
@@ -828,9 +828,9 @@ class SILEQIIntegrator(SIIntegrator):
             inputs = list(zip(self._prev_rates, bos_rates, res_bar.rates,
                               repeat(prev_dt), repeat(dt)))
             time1, inter_conc = timed_deplete(
-                self.chain, bos_conc, inputs, dt, matrix_func=leqi_f3)
+                self.chain, bos_conc, inputs, dt, matrix_func=leqi_f3, fet_deplete=self.operator.fet_deplete)
             time2, inter_conc = timed_deplete(
-                self.chain, inter_conc, inputs, dt, matrix_func=leqi_f4)
+                self.chain, inter_conc, inputs, dt, matrix_func=leqi_f4, fet_deplete=self.operator.fet_deplete)
             proc_time += time1 + time2
 
         return proc_time, [eos_conc, inter_conc], [res_bar]
