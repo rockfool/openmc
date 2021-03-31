@@ -5,6 +5,7 @@ Utility class for zernike polynomials
 
 import numpy as np
 from math import pi
+from math import sqrt
 import numpy as np
 import copy
 from scipy.optimize import minimize
@@ -54,6 +55,29 @@ def flat_zernike1d(val, order, radius):
     coeffs = np.zeros(n)
     coeffs[0] = val
     return Zernike1DPolynomial(order, coeffs, radial_norm=radius)
+
+def normalize(type, order, i_loc):
+    res = 1.0 
+    if type == 'zernike':
+        ind = 0
+        for n in range(order+1):
+            for m in range(-n, n+1, 2):
+                if (i_loc == ind):
+                    if (m == 0):
+                        res = sqrt(n + 1.0)
+                    else:
+                        res = sqrt(2.0*n+2.0)
+                ind = ind + 1
+    elif type == 'zernike1d':
+        ind = 0
+        for n in range(0, order+1, 2):
+            if (i_loc == ind):
+                res = sqrt(n + 1.0)
+                ind = ind + 1 
+    else:
+        raise "Error type of zernike!"
+    return res         
+
 
 class ZernikePolynomial:
     ''' ZernikePolynomial class
