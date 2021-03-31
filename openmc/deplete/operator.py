@@ -276,9 +276,12 @@ class Operator(TransportOperator):
         openmc.reset_auto_ids()
 
         # Update status
-        #print(vec) # FETs testing 
+        # print(vec) # FETs testing 
+        # print(self.number[0, :])
+        # print('O16', self.number.get_atom_density(0, 'O16', fet_deplete=self.fet_deplete))
         self.number.set_density(vec, self.fet_deplete) # FETs 
-        
+        # print(self.number[0, :])
+        # print('O16', self.number.get_atom_density(0, 'O16', fet_deplete=self.fet_deplete))
         # Update material compositions and tally nuclides
         self._update_materials() # FETs 
         nuclides = self._get_tally_nuclides(fet_deplete=self.fet_deplete) # FETs 
@@ -439,7 +442,8 @@ class Operator(TransportOperator):
                 temp_args = list(itertools.chain(*temp_args))[0]
                 temp_args = temp_args[1:]
                 #temp_args[0] = density * 1.0e24
-                coeff = np.array(temp_args) * 1.0e24
+                coeff = np.array(temp_args) 
+                coeff[0] *= 1.0e24
                 #print(mat_id, nuclide, coeff)
                 self.number.set_atom_density(mat_id, nuclide, coeff, fet_deplete=fet_deplete)
             else:
@@ -473,7 +477,7 @@ class Operator(TransportOperator):
         for nuclide in geom_nuc_densities.keys():
             if nuclide in depl_nuc:
                 concentration = prev_res.get_atoms(mat_id, nuclide, fet_deplete=fet_deplete)[1][-1] #FETs 
-                print(concentration)
+                #print(concentration)
                 volume = prev_res[-1].volume[mat_id]
                 number = concentration / volume
             else:
@@ -611,7 +615,7 @@ class Operator(TransportOperator):
             materials = openmc.Materials(self.geometry.get_all_materials()
                                          .values())
             number = self.number
-            nuclides = list(self.number.nuclides)
+            nuclides = list(self.number.nuclides)        
             for i in range(len(materials)):
                 materials[i]._nuclides.sort(key=lambda x: nuclides.index(x[0]))
                 mat = materials[i]
@@ -629,7 +633,7 @@ class Operator(TransportOperator):
                             val = number.get_atom_density(str(mat.id), nuc_name, fet_deplete=self.fet_deplete) 
                             val /= 1.0e24 # Unit conversion from atom/cm3 to atom/b-cm
                             loc_nuc = materials[i].find_nuclide(nuc_name)
-                            #print(loc_nuc, nuc_name)
+                            #print(i, nuc_name, loc_nuc, val)
                             if loc_nuc == -1:
                                 if self.fet_deplete is None:
                                     if val > 1.0e-50: # val[0], val.any() or val.all()
@@ -638,6 +642,7 @@ class Operator(TransportOperator):
                                     if val.any() > 1.0e-50:
                                         materials[i].add_nuclide_fet(nuc_name, val, fet_deplete=self.fet_deplete)
                             else:
+                                #print(nuc_name, val)
                                 materials[i].update_nuclide(nuc_name, val, fet_deplete=self.fet_deplete)
                         #break                      
             materials.export_to_xml()

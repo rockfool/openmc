@@ -56,7 +56,7 @@ def deplete(chain, x, rates, dt, matrix_func=None, fet_deplete=None): #FETs
             "Number of material fission yield distributions {} is not equal "
             "to the number of compositions {}".format(len(fission_yields),
                 len(x)))
-    #
+    # FETs 
     mp = 1
     if fet_deplete is not None:
         if fet_deplete['name']== 'zernike':
@@ -67,13 +67,13 @@ def deplete(chain, x, rates, dt, matrix_func=None, fet_deplete=None): #FETs
     if matrix_func is None:
         matrices = map(chain.form_matrix, rates, fission_yields, repeat(mp))
     else:
-        matrices = map(matrix_func, repeat(chain), rates, fission_yields)
+        matrices = map(matrix_func, repeat(chain), rates, fission_yields, repeat(mp))
 
     # Use multiprocessing pool to distribute work
     with Pool() as pool:
         inputs = zip(matrices, x, repeat(dt))
         x_result = list(pool.starmap(CRAM48, inputs))
-
+    
     return x_result
 
 

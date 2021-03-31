@@ -180,7 +180,9 @@ class AtomNumber(object):
             elif fet['name']=='zernike1d':
                 mp = zer.num_poly1d(fet_deplete['order'])
             #
-            coeff = self[mat, nuc * mp : (nuc + 1) * mp]
+            coeff = np.zeros(mp)
+            for i in range(mp):
+                coeff[i] = self[mat, nuc * mp + i]
             coeff[0] /= self.volume[mat]
             return coeff
         #

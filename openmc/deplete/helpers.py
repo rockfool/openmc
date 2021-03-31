@@ -157,10 +157,11 @@ class DirectReactionRateHelper(ReactionRateHelper):
             for i in range(mp):
                 #print(self._rate_tally.results[i * mat_id, :, 1])
                 #full_tally_res = self._rate_tally.results[mp * mat_id + i, :, 1] 
+                factor = zer.normalize(fet_deplete['name'], fet_deplete['order'], i)
                 full_tally_res = self._rate_tally[mat_id].results[i, :, 1] 
                 for i_tally, (i_nuc, i_react) in enumerate(
                     product(nuc_index, react_index)):
-                    self._results_cache[i_nuc, i_react * mp + i] = full_tally_res[i_tally]
+                    self._results_cache[i_nuc, i_react * mp + i] = full_tally_res[i_tally] * factor
         #print(self._results_cache) # testing for FETs 
         return self._results_cache
 

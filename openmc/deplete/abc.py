@@ -309,18 +309,21 @@ class ReactionRateHelper(ABC):
         """
         #FETs 
         mp = 1
+        number_fet = number
         if fet_deplete is not None:
             if fet_deplete['name']== 'zernike':
                 mp = zer.num_poly(fet_deplete['order'])
             elif fet['name']=='zernike1d':
                 mp = zer.num_poly1d(fet_deplete['order'])
-            number = number[::mp]
+            number_fet = number[::mp]
         #       
-        mask = nonzero(number)
+        mask = nonzero(number_fet)
         results = self._results_cache
         for col in range(results.shape[1] // mp): #FETs 
             for i in range(mp):
-                results[mask, col * mp + i] /= number[mask]  
+                results[mask, col * mp + i] /= number_fet[mask]
+            #results[mask, col * mp] /= number_fet[mask] 
+            # print(results[mask, col * mp])            
         return results
 
 
@@ -574,7 +577,7 @@ class TalliedFissionYieldHelper(FissionYieldHelper):
 
         # Tally group-wise fission reaction rates
         self._fission_rate_tally = Tally()
-        self._fission_rate_tally.writable = False
+        self._fission_rate_tally.writable = True #FETs
         self._fission_rate_tally.scores = ['fission']
 
         self._fission_rate_tally.filters = [MaterialFilter(materials)]
