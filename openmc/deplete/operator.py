@@ -18,6 +18,7 @@ from warnings import warn
 
 import h5py
 import numpy as np
+import math 
 from uncertainties import ufloat
 
 import openmc
@@ -622,7 +623,7 @@ class Operator(TransportOperator):
                 for mat_i in number.materials:
                     if str(mat.id) == mat_i:
                         # change density unit to "sum"
-                        # materials[i].density_units = "sum"
+                        materials[i]._density_units = "sum"
                         #for j in range(len(mat.nuclides)):
                         #    nuc = mat.nuclides[j]
                         #    nuc_name = mat.nuclides[j][0]
@@ -807,7 +808,7 @@ class Operator(TransportOperator):
 
             # Divide by total number and store
             rates[i] = self._rate_helper.divide_by_adens(number, fet_deplete=fet_deplete) #FETs 
-
+                
         # Reduce energy produced from all processes
         # J / s / source neutron
         energy = comm.allreduce(self._energy_helper.energy)

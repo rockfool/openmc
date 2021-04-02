@@ -68,6 +68,16 @@ class DirectReactionRateHelper(ReactionRateHelper):
             self._rate_tally.scores = scores
             self._rate_tally.filters = [MaterialFilter(materials)]
         #
+        # if fet_deplete is not None:
+        #     self._rate_tally = Tally()
+        #     self._rate_tally.writable = True 
+        #     self._rate_tally.scores = scores
+        #     self._rate_tally.filters = [MaterialFilter(materials)]
+        #     zer_filter = ZernikeFilter()
+        #     zer_filter.order = fet_deplete['order']
+        #     zer_filter.params = {'x': 0.0, 'y': 0.0, 'r':0.39218}
+        #     self._rate_tally.filters += [zer_filter]
+        #     return 
         # FETs for materials number over 1
         if fet_deplete is not None:
             print(len(materials), 'in helpers.py') 
@@ -75,6 +85,7 @@ class DirectReactionRateHelper(ReactionRateHelper):
             for i, mat in enumerate(materials):
                 self._rate_tally[i].writable = True
                 self._rate_tally[i].scores = scores
+                self._rate_tally[i].estimator = 'collision'
                 self._rate_tally[i].filters = [MaterialFilter([mat])]
                 if fet_deplete is not None:
                     temp_loc = {}
