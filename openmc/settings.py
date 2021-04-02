@@ -690,7 +690,7 @@ class Settings(object):
             elif key == 'order':
                 name = 'fet deplete order'
                 cv.check_type(name, value, Integral)
-                cv.check_greater_than(name, value, 0)
+                cv.check_greater_than(name, value, -1)
             elif key == 'radius':
                 name = 'fet deplete radius'
                 cv.check_type(name, value, Real)
