@@ -40,13 +40,13 @@ public:
   virtual void set_order(int order);
 
   double x() const { return x_; }
-  void set_x(double x) { x_ = x; }
+  virtual void set_x(double x) { x_ = x; }
 
   double y() const { return y_; }
-  void set_y(double y) { y_ = y; }
+  virtual void set_y(double y) { y_ = y; }
 
   double r() const { return r_; }
-  void set_r(double r) { r_ = r; }
+  virtual void set_r(double r);
 
   //----------------------------------------------------------------------------
   // Data members

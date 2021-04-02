@@ -81,6 +81,15 @@ ZernikeFilter::set_order(int order)
   n_bins_ = ((order+1) * (order+2)) / 2;
 }
 
+void
+ZernikeFilter::set_r(double r)
+{
+  if (r < 0) {
+    throw std::invalid_argument{"Zernike radius must be non-negative."};
+  }
+  r_ = r;
+}
+
 //==============================================================================
 // ZernikeRadialFilter implementation
 //==============================================================================
