@@ -66,6 +66,7 @@ class DirectReactionRateHelper(ReactionRateHelper):
             self._rate_tally = Tally()
             self._rate_tally.writable = True 
             self._rate_tally.scores = scores
+            self._rate_tally.estimator = 'collision'
             self._rate_tally.filters = [MaterialFilter(materials)]
         #
         # if fet_deplete is not None:

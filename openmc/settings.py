@@ -710,6 +710,9 @@ class Settings(object):
             elif key == 'print_nuclide':
                 name = 'fet deplete print nuclide'
                 cv.check_type(name, value, Iterable)
+            elif key == 'cvmt':
+                name = 'fet deplete cvmt'
+                cv.check_type(name, value, bool)
         self._fet_deplete = fet
 
     @volume_calculations.setter
