@@ -549,7 +549,7 @@ class Operator(TransportOperator):
                         if not isinstance(val, Iterable):
                             val *= 1.0e-24  
                             # If nuclide is zero, do not add to the problem.
-                            if val > 0.0:
+                            if val > 1.0e-50:
                                 if self.round_number:
                                     val_magnitude = np.floor(np.log10(val))
                                     val_scaled = val / 10**val_magnitude
@@ -568,7 +568,7 @@ class Operator(TransportOperator):
                                 number_i[mat, nuc] = 0.0
                         else: #FETs 
                             val[0] *= 1.0e-24
-                            if val[0] > 0.0:
+                            if val[0] > 1.0e-50:
                                 if self.round_number:
                                     val_magnitude = np.floor(np.log10(val[0]))
                                     val_scaled = val[0] / 10**val_magnitude
