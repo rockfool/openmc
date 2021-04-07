@@ -562,7 +562,7 @@ class Operator(TransportOperator):
                             else:
                                 # Only output warnings if values are significantly
                                 # negative. CRAM does not guarantee positive values.
-                                if val < 0.0: #-1.0e-21:
+                                if val <= 1.0e-50:
                                     print("WARNING: nuclide ", nuc, " in material ", mat,
                                           " is negative (density = ", val, " at/barn-cm)")
                                 number_i[mat, nuc] = 0.0
@@ -581,7 +581,7 @@ class Operator(TransportOperator):
                             else:
                                 # Only output warnings if values are significantly
                                 # negative. CRAM does not guarantee positive values.
-                                if val[0] < 0.0: #-1.0e-21:
+                                if val[0] <= 1.0e-50:
                                     print("WARNING: nuclide ", nuc, " in material ", mat,
                                           " is negative (density = ", val[0], " at/barn-cm)")
                                 number_i[mat, nuc] = 0.0
@@ -808,7 +808,7 @@ class Operator(TransportOperator):
 
             # Divide by total number and store
             rates[i] = self._rate_helper.divide_by_adens(number, fet_deplete=fet_deplete) #FETs 
-                
+
         # Reduce energy produced from all processes
         # J / s / source neutron
         energy = comm.allreduce(self._energy_helper.energy)
