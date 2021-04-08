@@ -1218,3 +1218,38 @@ class Materials(cv.CheckedList):
             materials.cross_sections = xs.text
 
         return materials
+
+    def export_to_pdf(cls, nuc, fet_deplete=None):
+        """Export pdf for given nuclide in material
+        """
+        import openmc.zernike as zer
+        
+        n_loc = self.find_nuclide(nuc)
+        
+        if n_loc==-1:
+            raise "Could not find nuclide {}".format(nuc)
+            return
+        else:
+            nuclide = self._nuclides[n_loc]
+            if (len(nuclide)<=3):
+                raise "Not FETs expression."
+                return 
+            coeff_tmp = nuclide[3:-2]
+            radius = coeff_tmp[0]
+            coeff = coeff_tmp[1:]
+            poly_type = nuclide[-1]
+            order = 0 
+            if poly_type == 'zernike':
+                m = len(coeff)
+                delta = np.sqrt(8*m + 1)
+                order = (int(delta) - 3)//2
+            elif poly_type == 'zernike1d':
+                order = int(len(coeff) - 1)*2 
+            else:
+                raise "Unknown type of FETs expression."
+                return 
+            filename = self.name() + "-" + str(nuc) + ".pdf"
+            zer_file = zer.ZernikePolynomial(order, coeff, radius, sqrt_normed=False)
+            zer_file.plot_disk(20, 32, filename)
+        
+        
