@@ -10,7 +10,7 @@ from warnings import warn
 import numpy as np
 import h5py
 
-from . import comm, have_mpi, MPI
+from . import comm, MPI #, have_mpi
 from .reaction_rates import ReactionRates
 #FETs 
 from openmc import zernike as zer
@@ -208,16 +208,37 @@ class Results(object):
             What step is this?
 
         """
-        if have_mpi and h5py.get_config().mpi:
-            kwargs = {'driver': 'mpio', 'comm': comm}
+        # if have_mpi and h5py.get_config().mpi:
+        #     kwargs = {'driver': 'mpio', 'comm': comm}
+        # else:
+        #     kwargs = {}
+        # 
+        # # Write new file if first time step, else add to existing file
+        # kwargs['mode'] = "w" if step == 0 else "a"
+        # 
+        # with h5py.File(filename, **kwargs) as handle:
+        #     self._to_hdf5(handle, step, fet_deplete=fet_deplete)
+        
+        #FETs
+         # Write new file if first time step, else add to existing file
+        kwargs = {'mode': "w" if step == 0 else "a"}
+
+        if h5py.get_config().mpi and comm.size > 1:
+            # Write results in parallel
+            kwargs['driver'] = 'mpio'
+            kwargs['comm'] = comm
+            with h5py.File(filename, **kwargs) as handle:
+                self._to_hdf5(handle, step, parallel=True, fet_deplete=fet_deplete)
         else:
-            kwargs = {}
+            # Gather results at root process
+            all_results = comm.gather(self)
 
-        # Write new file if first time step, else add to existing file
-        kwargs['mode'] = "w" if step == 0 else "a"
+            # Only root process writes results
+            if comm.rank == 0:
+                with h5py.File(filename, **kwargs) as handle:
+                    for res in all_results:
+                        res._to_hdf5(handle, step, parallel=False, fet_deplete=fet_deplete)
 
-        with h5py.File(filename, **kwargs) as handle:
-            self._to_hdf5(handle, step, fet_deplete=fet_deplete)
 
     def _write_hdf5_metadata(self, handle, fet_deplete=None):
         """Writes result metadata in HDF5 file
@@ -303,7 +324,7 @@ class Results(object):
             "depletion time", (1,), maxshape=(None,),
             dtype="float64")
 
-    def _to_hdf5(self, handle, index, fet_deplete=None):
+    def _to_hdf5(self, handle, index, parallel=False, fet_deplete=None):
         """Converts results object into an hdf5 object.
 
         Parameters
@@ -314,11 +335,20 @@ class Results(object):
             What step is this?
 
         """
+        # if "/number" not in handle:
+        #     comm.barrier()
+        #     self._write_hdf5_metadata(handle, fet_deplete=fet_deplete)
+        # 
+        # comm.barrier()
+        
+        #
         if "/number" not in handle:
-            comm.barrier()
+            if parallel:
+                comm.barrier()
             self._write_hdf5_metadata(handle, fet_deplete=fet_deplete)
 
-        comm.barrier()
+        if parallel:
+            comm.barrier()
 
         # Grab handles
         number_dset = handle["/number"]
