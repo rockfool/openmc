@@ -193,7 +193,7 @@ class ResultsList(list):
             times[ix] = res.proc_time
         return times
     
-     def export_to_materials_xml(self, mats_list, burnup_index, nuc_with_data=None, fet_deplete=None):
+    def export_to_materials_xml(self, mats_list, burnup_index, nuc_with_data=None, fet_deplete=None):
         """
         """
         result = self[burnup_index]
