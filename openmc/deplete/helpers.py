@@ -81,7 +81,8 @@ class DirectReactionRateHelper(ReactionRateHelper):
         #     return 
         # FETs for materials number over 1
         if fet_deplete is not None:
-            print(len(materials), 'in helpers.py') 
+            if comm.rank == 0:
+                print(len(materials), 'in helpers.py') 
             self._rate_tally = [Tally() for mat in materials]
             for i, mat in enumerate(materials):
                 self._rate_tally[i].writable = True
