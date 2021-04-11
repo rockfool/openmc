@@ -16,7 +16,7 @@ class ResultsList(list):
     """
 
     @classmethod
-    def from_hdf5(cls, filename):
+    def from_hdf5(cls, filename, fet_deplete=None):
         """Load in depletion results from a previous file
 
         Parameters
@@ -37,7 +37,7 @@ class ResultsList(list):
             n = fh["number"][...].shape[0]
 
             for i in range(n):
-                new.append(Results.from_hdf5(fh, i))
+                new.append(Results.from_hdf5(fh, i, fet_deplete)) #FETs
         return new
 
     def get_atoms(self, mat, nuc, fet_deplete=None):
@@ -196,6 +196,8 @@ class ResultsList(list):
     def export_to_materials_xml(self, mats_list, burnup_index, nuc_with_data=None, fet_deplete=None):
         """
         """
+        import openmc
+        #
         result = self[burnup_index]
         mat_file = openmc.Materials()
         for i, mat in enumerate(mats_list):

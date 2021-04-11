@@ -396,7 +396,8 @@ class Material(IDManagerMixin):
     
     # cvmt 
     def add_nuclide(self, nuclide, percent, percent_type='ao', 
-                    poly=None, zernike=None, zernike1d=None):
+                    poly=None, zernike=None, zernike1d=None, 
+                    poly_coeffs=None):
         """Add a nuclide to the material
 
         Parameters
@@ -462,7 +463,9 @@ class Material(IDManagerMixin):
           self._nuclides.append((nuclide, percent, percent_type, zernike1d, poly_type))
         else:
             self._nuclides.append((nuclide, percent, percent_type))
-    
+        # FETs
+        if poly_coeffs is not None:
+            self._nuclides.append((nuclide, percent, percent_type, poly_coeffs))
         
     # FETs    
     def add_nuclide_fet(self, nuclide, val, percent_type='ao', fet_deplete=None):
@@ -485,15 +488,15 @@ class Material(IDManagerMixin):
                 mp = num_poly(fet_deplete['order'])
             elif fet['name']=='zernike1d':
                 mp = num_poly1d(fet_deplete['order'])
+            radius = fet_deplete['radius']
+            poly_type = fet_deplete['name']
         for nuc in self._nuclides:
             if nuclide == nuc[0]:
                 percent_type = nuc[2]
                 self._nuclides.remove(nuc)
                 if fet_deplete is not None:
                     percent = val[0]
-                    fet = nuc[3]
-                    fet[1::] = val[:]
-                    poly_type = nuc[4]
+                    fet = [radius] + [i for i in val]
                     self._nuclides.append((nuclide, percent, percent_type, fet, poly_type))
                 else:
                     percent = val
@@ -1058,7 +1061,24 @@ class Material(IDManagerMixin):
                 mat.add_nuclide(name, float(nuclide.attrib['ao']))
             elif 'wo' in nuclide.attrib:
                 mat.add_nuclide(name, float(nuclide.attrib['wo']), 'wo')
-
+            # FETs 
+            if 'poly_coeffs' in nuclide.attrib:
+                coeffs = nuclide.attrib['poly_coeffs']
+                coeffs = coeffs.split(' ')
+                fet_type = nuclide.attrib['poly_type']
+                radius = coeffs[0]
+                m = len(coeffs) - 1
+                order = 0
+                if fet_type == 'zernike':
+                    delta = 8 * m + 1
+                    order = int(np.sqrt(delta) - 3)//2
+                else:
+                    order = (m - 1)*2
+                fet_deplete = {'name' : fet_type,
+                               'order': order,
+                               'radius': radius}
+                mat.update_nuclide(name, coeffs[1::], fet_deplete=fet_deplete)
+            
         # Get each S(a,b) table
         for sab in elem.findall('sab'):
             fraction = float(sab.get('fraction', 1.0))
@@ -1079,6 +1099,41 @@ class Material(IDManagerMixin):
             mat.isotropic = isotropic.text.split()
 
         return mat
+    
+    # works for FETs only 
+    def export_to_pdf(self, nuc, fet_deplete=None):
+        """Export pdf for given nuclide in material
+        """
+        import openmc.zernike as zer
+        
+        n_loc = self.find_nuclide(nuc)
+        
+        if n_loc==-1:
+            print("Could not find nuclide in given material.")
+            return
+        else:
+            nuclide = self._nuclides[n_loc]
+            if (len(nuclide)<=3):
+                print("Not FETs expression.")
+                return 
+            coeff_tmp = nuclide[3]
+            radius = float(coeff_tmp[0])
+            coeff = [float(i) for i in coeff_tmp[1:]]
+            poly_type = nuclide[-1]
+            order = 0 
+            if poly_type == 'zernike':
+                m = len(coeff)
+                delta = np.sqrt(8*m + 1)
+                order = (int(delta) - 3)//2
+            elif poly_type == 'zernike1d':
+                order = int(len(coeff) - 1)*2 
+            else:
+                print("Unknown type of FETs expression.")
+                return 
+            filename = 'mat-' + str(self.id) + "-" + nuc + ".pdf"
+            #print(order, coeff, radius)
+            zer_file = zer.ZernikePolynomial(order, coeff, radius, sqrt_normed=False)
+            zer_file.plot_disk(20, 32, filename)
 
 
 class Materials(cv.CheckedList):
@@ -1218,38 +1273,4 @@ class Materials(cv.CheckedList):
             materials.cross_sections = xs.text
 
         return materials
-
-    def export_to_pdf(cls, nuc, fet_deplete=None):
-        """Export pdf for given nuclide in material
-        """
-        import openmc.zernike as zer
-        
-        n_loc = self.find_nuclide(nuc)
-        
-        if n_loc==-1:
-            raise "Could not find nuclide {}".format(nuc)
-            return
-        else:
-            nuclide = self._nuclides[n_loc]
-            if (len(nuclide)<=3):
-                raise "Not FETs expression."
-                return 
-            coeff_tmp = nuclide[3:-2]
-            radius = coeff_tmp[0]
-            coeff = coeff_tmp[1:]
-            poly_type = nuclide[-1]
-            order = 0 
-            if poly_type == 'zernike':
-                m = len(coeff)
-                delta = np.sqrt(8*m + 1)
-                order = (int(delta) - 3)//2
-            elif poly_type == 'zernike1d':
-                order = int(len(coeff) - 1)*2 
-            else:
-                raise "Unknown type of FETs expression."
-                return 
-            filename = self.name() + "-" + str(nuc) + ".pdf"
-            zer_file = zer.ZernikePolynomial(order, coeff, radius, sqrt_normed=False)
-            zer_file.plot_disk(20, 32, filename)
-        
-        
+    

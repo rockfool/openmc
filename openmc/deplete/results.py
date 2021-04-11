@@ -413,7 +413,7 @@ class Results(object):
                 )
 
     @classmethod
-    def from_hdf5(cls, handle, step):
+    def from_hdf5(cls, handle, step, fet_deplete=None):
         """Loads results object from HDF5.
 
         Parameters
@@ -471,7 +471,10 @@ class Results(object):
         results.rates = []
         # Reconstruct reactions
         for i in range(results.n_stages):
-            rate = ReactionRates(results.mat_to_ind, rxn_nuc_to_ind, rxn_to_ind, True)
+            #rate = ReactionRates(results.mat_to_ind, rxn_nuc_to_ind, rxn_to_ind, True, fet_deplete)
+            rate = ReactionRates(results.mat_to_ind, rxn_nuc_to_ind, rxn_to_ind, 
+                                 from_results=True, fet_deplete=fet_deplete) #FETs
+
 
             rate[:] = handle["/reaction rates"][step, i, :, :, :]
             results.rates.append(rate)
