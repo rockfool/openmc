@@ -907,9 +907,14 @@ class Material(IDManagerMixin):
                 xml_element.set("ao", str(nuclide[1]))
             else:
                 xml_element.set("wo", str(nuclide[1]))
-            #cvmt 
+            #FETs CVMT 
             if len(nuclide) > 3:
-                xml_element.set("poly_coeffs", ' '.join([str(c) for c in nuclide[3]])) 
+                #print(nuclide[3])
+                tmp = nuclide[3]
+                radius = float(tmp[0])
+                coeffs = [float(i) for i in tmp[1::]]
+                coeffs_list = [radius] + coeffs
+                xml_element.set("poly_coeffs", ' '.join([str(c) for c in coeffs_list])) 
                 xml_element.set("poly_type", nuclide[4])                
             
 

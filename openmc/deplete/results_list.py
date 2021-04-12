@@ -197,6 +197,14 @@ class ResultsList(list):
         """
         """
         import openmc
+        import openmc.zernike as zer
+        # FETs 
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
         #
         result = self[burnup_index]
         mat_file = openmc.Materials()
@@ -207,19 +215,28 @@ class ResultsList(list):
             if mat_id in result.mat_to_ind.keys():
                 new_mat.volume = result.volume[str(mat_id)]
                 for nuc in result.nuc_to_ind.keys():
-                    atoms = result[0, str(mat_id), nuc]
+                    loc_nuc = result.nuc_to_ind[nuc]
+                    if fet_deplete is not None:
+                        coeffs = np.zeros(mp)
+                        for i in range(mp):
+                            coeffs[i] = result[0, str(mat_id), loc_nuc * mp + i] * 1e-24
+                        atoms = coeffs[0]
+                        #coeffs[0] *= 1e-24
+                        #print(coeffs)
+                    else: 
+                        atoms = result[0, str(mat_id), nuc]
                     if atoms > 0.0:
                         atoms_per_barn_cm = 1e-24 * atoms / new_mat.volume
                         if nuc_with_data is None:
                             if fet_deplete is None:
                                 new_mat.add_nuclide(nuc, atoms_per_barn_cm)
                             else: 
-                                new_mat.add_nuclide_fet(nuc, atoms_per_barn_cm, fet_deplete=fet_deplete)
+                                new_mat.add_nuclide_fet(nuc, coeffs, fet_deplete=fet_deplete)
                         elif nuc in nuc_with_data:
                             if fet_deplete is None:
                                 new_mat.add_nuclide(nuc, atoms_per_barn_cm) 
                             else:
-                                new_mat.add_nuclide_fet(nuc, atoms_per_barn_cm, fet_deplete=fet_deplet)
+                                new_mat.add_nuclide_fet(nuc, coeffs, fet_deplete=fet_deplet)
                 mat_file.append(new_mat)
             else:
                 mat_file.append(mat)
