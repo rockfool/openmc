@@ -682,7 +682,7 @@ class Settings(object):
     def fet_deplete(self, fet):
         cv.check_type('fet deplete settings', fet, Mapping)
         keys = ('enable', 'order', 'radius', 'name', 'offset', 'print', 
-                'print_fuel', 'print_nuclide')
+                'print_fuel', 'print_nuclide', 'cvmt', 'axial_filter')
         for key, value in fet.items():
             cv.check_value('fet deplete dictionary key', key, keys)
             if key == 'enable':
@@ -713,6 +713,9 @@ class Settings(object):
             elif key == 'cvmt':
                 name = 'fet deplete cvmt'
                 cv.check_type(name, value, bool)
+            elif key == 'axial_filter':
+                name = 'fet deplete axial filter'
+                cv.check_type(name, value, Iterable)
         self._fet_deplete = fet
 
     @volume_calculations.setter
