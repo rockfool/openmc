@@ -1106,7 +1106,7 @@ class Material(IDManagerMixin):
         return mat
     
     # works for FETs only 
-    def export_to_pdf(self, nuc, fet_deplete=None):
+    def export_to_pdf(self, nuc, fet_deplete=None, multiplier=1.0):
         """Export pdf for given nuclide in material
         """
         import openmc.zernike as zer
@@ -1123,7 +1123,7 @@ class Material(IDManagerMixin):
                 return 
             coeff_tmp = nuclide[3]
             radius = float(coeff_tmp[0])
-            coeff = [float(i) for i in coeff_tmp[1:]]
+            coeff = [float(i)*multiplier for i in coeff_tmp[1:]]
             poly_type = nuclide[-1]
             order = 0 
             if poly_type == 'zernike':
