@@ -539,6 +539,7 @@ class Operator(TransportOperator):
             for mat in number_i.materials:
                 nuclides = []
                 densities = []
+                densities_fet = [] # FETs
                 for nuc in number_i.nuclides:
                     if nuc in self.nuclides_with_data:
                         val = number_i.get_atom_density(mat, nuc, fet_deplete=self.fet_deplete) #FETs 
@@ -568,17 +569,20 @@ class Operator(TransportOperator):
                                           " is negative (density = ", val, " at/barn-cm)")
                                 number_i[mat, nuc] = 0.0
                         else: #FETs 
-                            val[0] *= 1.0e-24
+                            #val[0] *= 1.0e-24
+                            val = [i*1.0e-24 for i in val]
                             if val[0] > 1.0e-50:
                                 if self.round_number:
-                                    val_magnitude = np.floor(np.log10(val[0]))
-                                    val_scaled = val[0] / 10**val_magnitude
-                                    val_round = round(val_scaled, 8)
-                            
-                                    val[0] = val_round * 10**val_magnitude
+                                    for i in range(len(val)):
+                                        val_magnitude = np.floor(np.log10(val[i]))
+                                        val_scaled = val[i] / 10**val_magnitude
+                                        val_round = round(val_scaled, 8)
+                                        
+                                        val[i] = val_round * 10**val_magnitude
                             
                                 nuclides.append(nuc)
                                 densities.append(val[0])
+                                densities_fet.append(val)
                             else:
                                 # Only output warnings if values are significantly
                                 # negative. CRAM does not guarantee positive values.
@@ -591,6 +595,10 @@ class Operator(TransportOperator):
                 # Update densities on C API side
                 mat_internal = openmc.lib.materials[int(mat)]
                 mat_internal.set_densities(nuclides, densities)
+                # FETs 
+                if (self.fet_deplete):
+                    mat_internal.set_densities_fet(nuclides, densities_fet)
+                #
                 #TODO Update densities on the Python side, otherwise the
                 # summary.h5 file contains densities at the first time step    
     

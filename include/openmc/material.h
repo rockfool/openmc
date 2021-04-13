@@ -95,7 +95,11 @@ public:
   //! \param[in] density Density of each nuclide in [atom/b-cm]
   void set_densities(const std::vector<std::string>& name,
     const std::vector<double>& density);
-
+  
+  // CVMT FETs 
+  void set_densities_fet(const std::vector<std::string>& name,
+    const std::vector<double>& density_fet);
+    
   //----------------------------------------------------------------------------
   // Accessors
 

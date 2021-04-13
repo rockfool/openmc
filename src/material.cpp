@@ -1013,6 +1013,14 @@ void Material::set_densities(const std::vector<std::string>& name,
   this->init_thermal();
 }
 
+// CVMT FETs
+void Material::set_densities_fet(const std::vector<std::string>& name,
+  const std::vector<double>& density_fet)
+{
+  
+}
+
+
 double Material::volume() const
 {
   if (volume_ < 0.0) {
@@ -1408,6 +1416,24 @@ openmc_material_set_densities(int32_t index, int n, const char** name, const dou
   if (index >= 0 && index < model::materials.size()) {
     try {
       model::materials[index]->set_densities({name, name + n}, {density, density + n});
+    } catch (const std::exception& e) {
+      set_errmsg(e.what());
+      return OPENMC_E_UNASSIGNED;
+    }
+  } else {
+    set_errmsg("Index in materials array is out of bounds.");
+    return OPENMC_E_OUT_OF_BOUNDS;
+  }
+  return 0;
+}
+
+// CVMT FETs 
+extern "C" int
+openmc_material_set_densities_fet(int32_t index, int n, const char** name, const double* density_fet)
+{
+  if (index >= 0 && index < model::materials.size()) {
+    try {
+      model::materials[index]->set_densities_fet({name, name + n}, {density_fet, density_fet + n});
     } catch (const std::exception& e) {
       set_errmsg(e.what());
       return OPENMC_E_UNASSIGNED;
