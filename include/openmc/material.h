@@ -97,6 +97,7 @@ public:
     const std::vector<double>& density);
   
   // CVMT FETs 
+  void set_fet(const std::string& fet_type, int order, double radius);
   void set_densities_fet(const std::vector<std::string>& name,
     const std::vector<double>& density_fet);
     

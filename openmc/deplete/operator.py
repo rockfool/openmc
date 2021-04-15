@@ -597,6 +597,10 @@ class Operator(TransportOperator):
                 mat_internal.set_densities(nuclides, densities)
                 # FETs 
                 if (self.fet_deplete):
+                    radius = self.fet_deplete['radius']
+                    order = self.fet_deplete['order']
+                    name = self.fet_deplete['name']
+                    mat_internal.set_fet(name, order, radius)
                     mat_internal.set_densities_fet(nuclides, densities_fet)
                 #
                 #TODO Update densities on the Python side, otherwise the

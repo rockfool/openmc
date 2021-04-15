@@ -47,9 +47,13 @@ _dll.openmc_material_set_densities.restype = c_int
 _dll.openmc_material_set_densities.errcheck = _error_handler
 #CVMT FETs 
 _dll.openmc_material_set_densities_fet.argtypes = [
-    c_int32, c_int, POINTER(c_char_p), POINTER(c_double)]
+    c_int32, c_int, c_int, POINTER(c_char_p), POINTER(c_double)]
 _dll.openmc_material_set_densities_fet.restype = c_int
 _dll.openmc_material_set_densities_fet.errcheck = _error_handler
+_dll.openmc_material_set_fet.argtypes = [
+    c_int32, c_char_p, c_int, c_double]
+_dll.openmc_material_set_fet.restype = c_int
+_dll.openmc_material_set_fet.errcheck = _error_handler
 #
 _dll.openmc_material_set_id.argtypes = [c_int32, c_int32]
 _dll.openmc_material_set_id.restype = c_int
@@ -248,7 +252,13 @@ class Material(_FortranObjectWithID):
         dp = d.ctypes.data_as(POINTER(c_double))
 
         _dll.openmc_material_set_densities(self._index, len(nuclides), nucs, dp)
-
+    
+    def set_fet(self, name, order, radius):
+        """Set FETs parameters in a material
+        """
+        name_ptr = c_char_p(name.encode())
+        _dll.openmc_material_set_fet(self._index, name_ptr, order, radius)
+    
     def set_densities_fet(self, nuclides, densities_fet):
         """Set the FETs densities of a list of nuclides in a material
         """
@@ -260,7 +270,8 @@ class Material(_FortranObjectWithID):
         d = np.asarray(densities_fet)
         dp = d.ctypes.data_as(POINTER(c_double))
 
-        _dll.openmc_material_set_densities_fet(self._index, len(nuclides), nucs, dp)
+        _dll.openmc_material_set_densities_fet(self._index, len(nuclides), 
+                                               len(densities_fet), nucs, dp)
         
 
 class _MaterialMapping(Mapping):

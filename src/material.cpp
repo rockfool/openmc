@@ -1014,12 +1014,70 @@ void Material::set_densities(const std::vector<std::string>& name,
 }
 
 // CVMT FETs
+void Material::set_fet(const std::string& fet_type, int order, double radius)
+{
+  Expects(fet_type.size() > 0);
+  Expects(order >= 0);
+  Expects(radius > 0.0);
+  //
+  int n_coeffs = 1;
+  poly_densities_.resize(nuclide_.size());
+  //
+  for (gsl::index i = 0; i < nuclide_.size(); ++i) {
+    //
+    poly_densities_[i].type_ = fet_type; 
+    poly_densities_[i].order_ = order; 
+    poly_densities_[i].coeffs_[0] = radius;
+    if (fet_type == "zernike")
+      n_coeffs += (order + 1)*(order + 2)/2; 
+    else if (fet_type == "zernike1d")
+      n_coeffs += order/2 + 1;  
+    poly_densities_[i].n_coeffs_ = n_coeffs;
+    poly_densities_[i].geom_norm_offset_ = 0.0;   
+    int ii = 0;     
+    for (int p = 0; p <= order; ++p)
+      for(int q = -p; q <= p; q = q + 2)
+      {
+        if (q ==0) 
+          poly_densities_[i].poly_norm_[ii] = std::sqrt(p + 1.0);
+        else 
+          poly_densities_[i].poly_norm_[ii] = std::sqrt(2.0 * p + 2.0);
+        ii = ii + 1; 
+      }
+  }
+  continuous_num_density_ = true;
+}
+
 void Material::set_densities_fet(const std::vector<std::string>& name,
   const std::vector<double>& density_fet)
 {
-  
+  auto n = name.size();
+  auto m = density_fet.size();
+  auto n_coeffs = (int) n/m;
+  Expects(n > 0);
+  Expects(m > 0);
+  Expects(n_coeffs > 0);
+  //
+  if (n != nuclide_.size()) {
+    nuclide_.resize(n);
+    poly_densities_.resize(n); 
+  }
+  //
+  for (gsl::index i = 0; i < n; ++i) {
+    const auto& nuc {name[i]};
+    if (data::nuclide_map.find(nuc) == data::nuclide_map.end()) {
+      int err = openmc_load_nuclide(nuc.c_str());
+      if (err < 0) throw std::runtime_error{openmc_err_msg};
+    }
+    //
+    nuclide_[i] = data::nuclide_map.at(nuc);
+    for (int j = 0; j < n_coeffs; j++)
+    {
+      poly_densities_[i].coeffs_[j + 1] = density_fet[i * n_coeffs + j];      
+    }
+  }
+  //
 }
-
 
 double Material::volume() const
 {
@@ -1427,13 +1485,32 @@ openmc_material_set_densities(int32_t index, int n, const char** name, const dou
   return 0;
 }
 
-// CVMT FETs 
-extern "C" int
-openmc_material_set_densities_fet(int32_t index, int n, const char** name, const double* density_fet)
+// CVMT FETs
+extern "C" int 
+openmc_material_set_fet(int32_t index, const char* name, int order, double radius)
 {
   if (index >= 0 && index < model::materials.size()) {
     try {
-      model::materials[index]->set_densities_fet({name, name + n}, {density_fet, density_fet + n});
+      model::materials[index]->set_fet(name, order, radius);
+    } catch (const std::exception& e) {
+      set_errmsg(e.what());
+      return OPENMC_E_UNASSIGNED;
+    }
+  } else {
+    set_errmsg("Index in materials array is out of bounds.");
+    return OPENMC_E_OUT_OF_BOUNDS;
+  }
+  return 0;
+}
+
+extern "C" int
+openmc_material_set_densities_fet(int32_t index, int n, int m, 
+                            const char** name, const double* density_fet)
+{
+  if (index >= 0 && index < model::materials.size()) {
+    try {
+      model::materials[index]->set_densities_fet({name, name + n}, 
+                                           {density_fet, density_fet + m});
     } catch (const std::exception& e) {
       set_errmsg(e.what());
       return OPENMC_E_UNASSIGNED;
