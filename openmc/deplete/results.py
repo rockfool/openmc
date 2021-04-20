@@ -513,12 +513,26 @@ class Results(object):
         # Create results
         results = Results()
         results.allocate(vol_dict, nuc_list, burn_list, full_burn_list, stages, fet_deplete=fet_deplete) #FETs 
-
+        
+        #FETs
+        mp = 1
+        if fet_deplete is not None:
+            if fet_deplete['name']== 'zernike':
+                mp = zer.num_poly(fet_deplete['order'])
+            elif fet['name']=='zernike1d':
+                mp = zer.num_poly1d(fet_deplete['order'])
+        
         n_mat = len(burn_list)
 
         for i in range(stages):
             for mat_i in range(n_mat):
-                results[i, mat_i, :] = x[i][mat_i]
+                # FETs 
+                # results[i, mat_i, :] = x[i][mat_i]
+                n_nuc = len(x[i][mat_i])//mp
+                for j in range(n_nuc):
+                    for k in range(mp):
+                        results[i, mat_i, j*mp+k] = x[i][mat_i][j*mp+k]
+                #
 
         results.k = [(r.k.nominal_value, r.k.std_dev) for r in op_results]
         results.rates = [r.rates for r in op_results]
