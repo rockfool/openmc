@@ -482,7 +482,7 @@ class Results(object):
         return results
 
     @staticmethod
-    def save(op, x, op_results, t, power, step_ind, proc_time=None, fet_deplete=None):
+    def save(op, x, op_results, t, power, step_ind, proc_time=None):
         """Creates and writes depletion results to disk
 
         Parameters
@@ -512,6 +512,8 @@ class Results(object):
 
         # Create results
         results = Results()
+        # FETs 
+        fet_deplete = op.fet_deplete
         results.allocate(vol_dict, nuc_list, burn_list, full_burn_list, stages, fet_deplete=fet_deplete) #FETs 
         
         #FETs
@@ -529,6 +531,7 @@ class Results(object):
                 # FETs 
                 # results[i, mat_i, :] = x[i][mat_i]
                 n_nuc = len(x[i][mat_i])//mp
+                print(n_nuc, )
                 for j in range(n_nuc):
                     for k in range(mp):
                         results[i, mat_i, j*mp+k] = x[i][mat_i][j*mp+k]
