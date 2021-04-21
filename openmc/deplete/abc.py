@@ -826,7 +826,7 @@ class Integrator(ABC):
                 conc = conc_list.pop()
 
                 Results.save(self.operator, conc_list, res_list, [t, t + dt],
-                             p, self._i_res + i, proc_time, fet_deplete=self.operator.fet_deplete) #FETs 
+                             p, self._i_res + i, proc_time) #FETs self.operator has fet_deplete
                 
                 # FETs Plot some results into pdfs 
                 if self.operator.fet_deplete is not None:
@@ -843,7 +843,7 @@ class Integrator(ABC):
             # Final simulation
             res_list = [self.operator(conc, p)]
             Results.save(self.operator, [conc], res_list, [t, t],
-                         p, self._i_res + len(self), proc_time, fet_deplete=self.operator.fet_deplete) #FETs 
+                         p, self._i_res + len(self), proc_time) #FETs self.operator has fet_deplete
             self.operator.write_bos_data(len(self) + self._i_res)
             
             #FETs 
