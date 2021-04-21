@@ -531,7 +531,6 @@ class Results(object):
                 # FETs 
                 # results[i, mat_i, :] = x[i][mat_i]
                 n_nuc = len(x[i][mat_i])//mp
-                print(n_nuc, )
                 for j in range(n_nuc):
                     for k in range(mp):
                         results[i, mat_i, j*mp+k] = x[i][mat_i][j*mp+k]
