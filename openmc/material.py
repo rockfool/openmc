@@ -99,6 +99,10 @@ class Material(IDManagerMixin):
         self._volume = None
         self._atoms = {}
         self._isotropic = []
+        # FETs
+        self._zernike_order = None
+        self._zernike1d_order = None
+        self._legendre_order = None
 
         # A list of tuples (nuclide, percent, percent type, poly_zernike) # FETs
         self._nuclides = []
@@ -267,7 +271,31 @@ class Material(IDManagerMixin):
                 density += 1e24 * atoms_per_cc * openmc.data.atomic_mass(nuc) \
                            / openmc.data.AVOGADRO
         return density*self.volume
-
+    # FETs 
+    @property
+    def zernike_order(self):
+        return self._zernike_order
+    
+    @property
+    def zernike1d_order(self):
+        return self._zernike1d_order
+    
+    @property    
+    def legendre_order(self):
+        return self._legendre_order
+    
+    @zernike_order.setter
+    def zernike_order(self, order):
+        self._zernike_order = order
+    
+    @zernike1d_order.setter
+    def zernike1d_order(self, order):
+        self._zernike1d_order = order
+    
+    @legendre_order.setter
+    def legendre_order(self, order):
+        self._legendre_order = order    
+    
     @classmethod
     def from_hdf5(cls, group):
         """Create material from HDF5 group
