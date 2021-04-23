@@ -195,9 +195,26 @@ class Operator(TransportOperator):
 
         # Clear out OpenMC, create task lists, distribute
         openmc.reset_auto_ids()
-        self.burnable_mats, volume, nuclides = self._get_burnable_mats()
+        
+        # FETs 
+        # self.burnable_mats, volume, nuclides = self._get_burnable_mats()
+         
+        if self.fet_deplete is None:
+            self.burnable_mats, volume, nuclides = self._get_burnable_mats()
+        else:
+            self.burnable_mats, volume, nuclides, \
+            zernike_orders, zernike_types, legendre_orders = self._get_burnable_mats()
+            self.fet_deplete['zernike_orders'] = zernike_orders
+            self.fet_deplete['zernike_types'] = zernike_types
+            self.fet_deplete['legendre_orders'] = legendre_orders
         self.local_mats = _distribute(self.burnable_mats)
         
+        # FETs testing 
+        # zernike_orders = self.fet_deplete['zernike_orders']  
+        # zernike_types =  self.fet_deplete['zernike_types'] 
+        # legendre_orders = self.fet_deplete['legendre_orders']         
+        # for mat in self.local_mats:
+        #     print(zernike_orders[mat], zernike_types[mat], legendre_orders[mat])
         
         # Generate map from local materials => material index
         self._mat_index_map = {
@@ -354,6 +371,10 @@ class Operator(TransportOperator):
         burnable_mats = set()
         model_nuclides = set()
         volume = OrderedDict()
+        #FETs 
+        zernike_orders = OrderedDict()
+        zernike_types = OrderedDict()
+        legendre_orders = OrderedDict()
 
         self.heavy_metal = 0.0
 
@@ -363,6 +384,11 @@ class Operator(TransportOperator):
                 model_nuclides.add(nuclide)
             if mat.depletable:
                 burnable_mats.add(str(mat.id))
+                #FETs
+                zernike_orders[str(mat.id)] = mat.zernike_order
+                zernike_types[str(mat.id)] = mat.zernike_type
+                legendre_orders[str(mat.id)] = mat.legendre_order
+                
                 if mat.volume is None:
                     raise RuntimeError("Volume not specified for depletable "
                                        "material with ID={}.".format(mat.id))
@@ -384,7 +410,7 @@ class Operator(TransportOperator):
             if nuc not in nuclides:
                 nuclides.append(nuc)
 
-        return burnable_mats, volume, nuclides
+        return burnable_mats, volume, nuclides, zernike_orders, zernike_types, legendre_orders #FETs
 
     def _extract_number(self, local_mats, volume, nuclides, prev_res=None, fet_deplete=None):
         """Construct AtomNumber using geometry

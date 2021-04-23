@@ -101,7 +101,7 @@ class Material(IDManagerMixin):
         self._isotropic = []
         # FETs
         self._zernike_order = None
-        self._zernike1d_order = None
+        self._zernike_type = None
         self._legendre_order = None
 
         # A list of tuples (nuclide, percent, percent type, poly_zernike) # FETs
@@ -277,8 +277,8 @@ class Material(IDManagerMixin):
         return self._zernike_order
     
     @property
-    def zernike1d_order(self):
-        return self._zernike1d_order
+    def zernike_type(self):
+        return self._zernike_type
     
     @property    
     def legendre_order(self):
@@ -288,9 +288,9 @@ class Material(IDManagerMixin):
     def zernike_order(self, order):
         self._zernike_order = order
     
-    @zernike1d_order.setter
-    def zernike1d_order(self, order):
-        self._zernike1d_order = order
+    @zernike_type.setter
+    def zernike_type(self, type):
+        self._zernike_type = type
     
     @legendre_order.setter
     def legendre_order(self, order):
