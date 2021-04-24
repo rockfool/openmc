@@ -200,7 +200,7 @@ class Operator(TransportOperator):
         # self.burnable_mats, volume, nuclides = self._get_burnable_mats()
          
         if self.fet_deplete is None:
-            self.burnable_mats, volume, nuclides = self._get_burnable_mats()
+            self.burnable_mats, volume, nuclides, *_ = self._get_burnable_mats()
         else:
             self.burnable_mats, volume, nuclides, \
             zernike_orders, zernike_types, legendre_orders = self._get_burnable_mats()
