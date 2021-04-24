@@ -125,7 +125,15 @@ class Material(IDManagerMixin):
         string += '{: <16}=\t{}\n'.format('\tID', self._id)
         string += '{: <16}=\t{}\n'.format('\tName', self._name)
         string += '{: <16}=\t{}\n'.format('\tTemperature', self._temperature)
-
+        
+        #FETs 
+        if self._zernike_order is not None:
+            string += '{: <16}=\t{}\n'.format('\tZernike_order', self._zernike_order)
+        if self._zernike_type is not None:
+            string += '{: <16}=\t{}\n'.format('\tZernike_type', self._zernike_type)
+        if self._legendre_order is not None:
+            string += '{: <16}=\t{}\n'.format('\tLegendre_order', self._legendre_order)
+            
         string += '{: <16}=\t{}'.format('\tDensity', self._density)
         string += ' [{}]\n'.format(self._density_units)
 
