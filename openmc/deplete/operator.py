@@ -631,6 +631,10 @@ class Operator(TransportOperator):
                         name = self.fet_deplete['name']
                         mat_internal.set_fet(name, order, radius)
                         mat_internal.set_densities_fet(nuclides, densities_fet)
+                    else: 
+                        mat_internal.disable_fet()
+                else:
+                    mat_internal.disable_fet()
                 #
                 #TODO Update densities on the Python side, otherwise the
                 # summary.h5 file contains densities at the first time step    

@@ -35,12 +35,12 @@ extern std::unordered_map<int32_t, int32_t> material_map;
 
 struct PolyProperty{
   std::string type_;                       //! user readable type
-  double coeffs_[100];                     //! coefficients for poly evaluation
+  double coeffs_[256];                     //! coefficients for poly evaluation
   int n_coeffs_;                           //! number of coeffs
   int order_;                              //! the order of the expansion
   int geom_norm_offset_;                   //! offset for the geom_norms coeffs
-  double poly_results_[100] {1.0};         //! variables used in evaluation property
-  double poly_norm_[100] {1.0};            //! polynomial norm available to property for efficiency
+  double poly_results_[256] {1.0};         //! variables used in evaluation property
+  double poly_norm_[256] {1.0};            //! polynomial norm available to property for efficiency
   double evaluate(Position r);             //! Evaluate function
   double evaluate_zernike1d(Position r);
   double evaluate_zernike(Position r); 
@@ -98,6 +98,7 @@ public:
   
   // CVMT FETs 
   void set_fet(const std::string& fet_type, int order, double radius);
+  void disable_fet();
   void set_densities_fet(const std::vector<std::string>& name,
     const std::vector<double>& density_fet);
     

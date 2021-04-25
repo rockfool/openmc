@@ -54,6 +54,9 @@ _dll.openmc_material_set_fet.argtypes = [
     c_int32, c_char_p, c_int, c_double]
 _dll.openmc_material_set_fet.restype = c_int
 _dll.openmc_material_set_fet.errcheck = _error_handler
+_dll.openmc_material_disable_fet.argtypes = [c_int32]
+_dll.openmc_material_disable_fet.restype = c_int
+_dll.openmc_material_disable_fet.errcheck = _error_handler
 #
 _dll.openmc_material_set_id.argtypes = [c_int32, c_int32]
 _dll.openmc_material_set_id.restype = c_int
@@ -258,6 +261,11 @@ class Material(_FortranObjectWithID):
         """
         name_ptr = c_char_p(name.encode())
         _dll.openmc_material_set_fet(self._index, name_ptr, order, radius)
+        
+    def disable_fet(self):
+        """Disable FETs parameters in a material
+        """
+        _dll.openmc_material_disable_fet(self._index)    
     
     def set_densities_fet(self, nuclides, densities_fet):
         """Set the FETs densities of a list of nuclides in a material

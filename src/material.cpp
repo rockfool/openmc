@@ -1048,6 +1048,14 @@ void Material::set_fet(const std::string& fet_type, int order, double radius)
   continuous_num_density_ = true;
 }
 
+void Material::disable_fet()
+{
+  //
+  poly_densities_.clear();
+  continuous_num_density_ = false;
+  //
+}
+
 void Material::set_densities_fet(const std::vector<std::string>& name,
   const std::vector<double>& density_fet)
 {
@@ -1492,6 +1500,23 @@ openmc_material_set_fet(int32_t index, const char* name, int order, double radiu
   if (index >= 0 && index < model::materials.size()) {
     try {
       model::materials[index]->set_fet(name, order, radius);
+    } catch (const std::exception& e) {
+      set_errmsg(e.what());
+      return OPENMC_E_UNASSIGNED;
+    }
+  } else {
+    set_errmsg("Index in materials array is out of bounds.");
+    return OPENMC_E_OUT_OF_BOUNDS;
+  }
+  return 0;
+}
+
+extern "C" int 
+openmc_material_disable_fet(int32_t index)
+{
+  if (index >= 0 && index < model::materials.size()) {
+    try {
+      model::materials[index]->disable_fet();
     } catch (const std::exception& e) {
       set_errmsg(e.what());
       return OPENMC_E_UNASSIGNED;
