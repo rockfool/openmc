@@ -188,7 +188,9 @@ class Operator(TransportOperator):
         self.fet_deplete = None
         if settings.fet_deplete is not None and settings.fet_deplete['enable'] == True:
             self.fet_deplete = settings.fet_deplete
-
+            if 'cvmt' not in self.fet_deplete.keys() :
+                self.fet_deplete['cvmt'] = True # default value is True if None 
+            print('cvmt is ', self.fet_deplete['cvmt'])
         # Differentiate burnable materials with multiple instances
         if self.diff_burnable_mats:
             self._differentiate_burnable_mats()
@@ -622,12 +624,13 @@ class Operator(TransportOperator):
                 mat_internal = openmc.lib.materials[int(mat)]
                 mat_internal.set_densities(nuclides, densities)
                 # FETs 
-                if (self.fet_deplete):
-                    radius = self.fet_deplete['radius']
-                    order = self.fet_deplete['order']
-                    name = self.fet_deplete['name']
-                    mat_internal.set_fet(name, order, radius)
-                    mat_internal.set_densities_fet(nuclides, densities_fet)
+                if self.fet_deplete is not None:
+                    if self.fet_deplete['cvmt'] is True:
+                        radius = self.fet_deplete['radius']
+                        order = self.fet_deplete['order']
+                        name = self.fet_deplete['name']
+                        mat_internal.set_fet(name, order, radius)
+                        mat_internal.set_densities_fet(nuclides, densities_fet)
                 #
                 #TODO Update densities on the Python side, otherwise the
                 # summary.h5 file contains densities at the first time step    
