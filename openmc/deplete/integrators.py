@@ -832,5 +832,8 @@ class SILEQIIntegrator(SIIntegrator):
             time2, inter_conc = timed_deplete(
                 self.chain, inter_conc, inputs, dt, matrix_func=leqi_f4, fet_deplete=self.operator.fet_deplete)
             proc_time += time1 + time2
+        
+        # Store previous results
+        self._prev_rates = copy.deepcopy(res_bar.rates)        
 
         return proc_time, [eos_conc, inter_conc], [res_bar]
