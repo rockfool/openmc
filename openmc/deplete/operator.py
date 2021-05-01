@@ -607,10 +607,16 @@ class Operator(TransportOperator):
                                         val_round = round(val_scaled, 8)
                                         
                                         val[i] = val_round * 10**val_magnitude
-                            
-                                nuclides.append(nuc)
-                                densities.append(val[0])
-                                densities_fet.append(val)
+                                # fix Am244_m1 bug 
+                                if (val[0] > 1e-50):
+                                    nuclides.append(nuc)
+                                    densities.append(val[0])
+                                    densities_fet.append(val)
+                                else:
+                                    if comm.rank == 0:
+                                        print("WARNING: nuclide ", nuc, " in material ", mat,
+                                          " is negative (density = ", val, " at/barn-cm)")
+                                    number_i[mat, nuc] = 0.0
                             else:
                                 # Only output warnings if values are significantly
                                 # negative. CRAM does not guarantee positive values.
