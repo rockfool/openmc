@@ -1,8 +1,8 @@
 """
-openmc.thsolver
+openmc.fuel
 ==============
 
-A thermal/hydraulic feedback front-end tool.
+A one-dimension fuel performance feedback front-end tool.
 """
 
 from .dummy_comm import DummyCommunicator

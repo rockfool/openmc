@@ -1,8 +1,8 @@
 """
-openmc.thsolver
+openmc.fuel.operator
 ==============
 
-A thermal/hydraulic feedback front-end toola.
+The operattor contains initialization and fuel performance solver.
 """
 from .materials import * 
 from .variables import *  
@@ -15,10 +15,10 @@ class Operator(Variables):
         """
         """
         super().__init__()
-        self.th_setup(power, conductance_gap, T_inlet, \
+        self.fuel_setup(power, conductance_gap, T_inlet, \
                       flow, zmeshes, radii, pitch, n_th_rings)
     
-    def thsolver(self, P_out, rel_power_dist):
+    def solver(self, P_out, rel_power_dist):
         """
         """
         temp_dist = np.zeros((self.nrp5+1, self.nzth))
@@ -84,7 +84,7 @@ class Operator(Variables):
                   #print(qf)
                   self.htcoef[k] = fhtcoef(self.tcool[k], self.deq, self.rhou[k])
               #
-              is_converged = self.fuel_conduction(k, self.tcool[k], self.htcoef[k], qf)
+              is_converged = self.heat_conduction(k, self.tcool[k], self.htcoef[k], qf)
            else:
               is_converged = False
            #
@@ -111,7 +111,7 @@ class Operator(Variables):
            #
         return is_converged, temp_dist, den_dist, cool_out
 
-    def fuel_conduction(self, k, tcool1, htcoef1, qf):
+    def heat_conduction(self, k, tcool1, htcoef1, qf):
         """
         """
         #

@@ -1,5 +1,5 @@
 """
-openmc.materials
+openmc.fuel.materials
 ==============
 
 This module contains common functions to determine materials properties

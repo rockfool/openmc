@@ -111,7 +111,7 @@ class Variables(object):
         self.htcoef     = [] #(nzth)  
 
 
-    def th_setup(self, power, conductance_gap, T_inlet, flow, zmeshes, radii, pitch, n_th_rings):
+    def fuel_setup(self, power, conductance_gap, T_inlet, flow, zmeshes, radii, pitch, n_th_rings):
         #input for TH 1D calculation
         #power             !  MW
         #conductance_gap   !  W/cm2-K
