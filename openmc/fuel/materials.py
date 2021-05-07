@@ -6,6 +6,7 @@ This module contains common functions to determine materials properties
 """
 # 
 import numpy as np 
+import math 
 #
 akfuel = np.array([1.05, 0., 0., 0., 2150., 73.15])
 akclad = np.array([7.51, 2.09e-2, -1.45e-5, 7.67e-9])
@@ -108,4 +109,57 @@ def ftfavg(x, nr, dr2):
     t = (xavg + area)*dr2/(8.*(nr*nr*dr2))
     return t
 
+
+def fthcon(ftemp, burnup, fden=1.0, gadoln=0.0)
+    """ 
+    fthcon calculates the fuel thermal conductivity and its derivative with respect to temperature as a function of
+    temperature, density, composition and burnup for UO2 fuel
+    
+    Input
+    
+    burnup - current local burnup (MWd/MTU)
+    ftemp  - current fuel ring temperature (K)
+    comp   - PuO2 content of fuel (percent puo2 in total fuel weight)
+    fden   - Current fuel density (ratio of actual density to theoretical density)
+    fotmtl - oxygen to metal ratio of fuel (atoms oxygen/atoms metal)
+    gadoln - weight fraction of gadolinia in the fuel
+
+    Output
+
+    con    - output fuel thermal conductivity (W/(m*K))
+    
+    Reference:
+
+    (1) Proposed by staff at NFI, Japan, at the May 1997 ANS Topical Meeting on LWR Fuel Performance
+        in Portland, OR: (Ohira, K., and N.Itagaki, 1997. "Thermal Conductivity Measurements of High
+        Burnup UO2 Pellet and a Benchmark Calculation of Fuel Center Temperature", proceedings pp. 541-549.
+    """
+    #bug, h, rphonon, elect, base, ax, cx, fm, x, tc, tco, ucon, po, buguo2, frac
+    #
+    #Burnup in GWd/MTU
+    bug = burnup / 1000.0
+    #
+    # NFI formula (Ohira & Itagaki, ANS LWR Fuel perf. Topical mtg. 1997). 
+    # MODIFIED in January 2002 to raise low-burnup thermal conductivity at low temperature
+    # and to lower thermal conductivity at very high temp.
+    h = 1.0 / (1.0 + 396.0 * math.exp(-6380.0 / ftemp))
+    rphonon = 1.0 / (0.0452 + 0.000246 * ftemp + 1.0 * 0.00187 * bug + 1.1599 * gadoln + \
+            (1.0 - 0.9 * math.exp(-0.04 * bug)) * 0.038 * (bug ** 0.28) * h)
+    elect = (3.50e9 / ftemp ** 2) * math.exp(-16361.0 / ftemp)
+    base = rphonon + elect
+    # fm is the Lucuta porosity correction factor(applied to 100% TD fuel)
+    fm  = fden / (1.0 + 0.5 * (1.0 - fden))
+    # NFI base equation is for 95% TD fuel, so multiply by 1.079 to raise to 100% TD fuel conductivity, then multiply by fm
+    con = base * fm * 1.079
+    # Find uncertainty
+    #sigftc = 1.0 # or 0.0  
+    #con = con * (1.0 + abs(sigftc * 0.088))
+    #
+    #fmelt = 3113.15 - 5.0 * burnup / 10000.0 - 4.8 * gadoln * 100 # for UO2 Fuel
+    #
+    #if (ftemp < ftmelt):
+    #    ucon = 0.2 * (1.0 + abs(2.0 - fotmtl) * 10.0)
+    #else:
+    #    ucon = con / 2.0
+    return con
 
