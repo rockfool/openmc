@@ -110,7 +110,7 @@ def ftfavg(x, nr, dr2):
     return t
 
 
-def fthcon(ftemp, burnup, fden=1.0, gadoln=0.0)
+def fthcon(ftemp, burnup, fden=0.95, gadoln=0.0)
     """ 
     fthcon calculates the fuel thermal conductivity and its derivative with respect to temperature as a function of
     temperature, density, composition and burnup for UO2 fuel
@@ -163,3 +163,31 @@ def fthcon(ftemp, burnup, fden=1.0, gadoln=0.0)
     #    ucon = con / 2.0
     return con
 
+def fthcon_ctf(ftemp):
+    """
+    fuel thermal conductivity extracted from CTF code
+    
+    Input
+    
+       ftemp: fuel temperature in K
+    """
+    # Formulation
+    tt = ftemp - 273.15
+    k_ctf = max(1.1038,2.335e+03/(tt + 464.)) + 7.027e-03 * math.exp(1.867e-03 * tt)
+    # Unit conversion
+    t_btu_kJ = 1.05505585262;
+    t_ft_in=12.0;
+    t_in_ft=1./t_ft_in;
+    t_in_m = 0.0254;
+    t_ft_m = t_ft_in * t_in_m;
+    t_K_F = 1.8;
+    t_F_K = 1. / t_K_F;
+    tc_US_SI = t_btu_kJ * 1E3/(3.6E3 * t_ft_m * t_F_K);
+    #
+    #Thermal Conductivity (SI --> US)
+    #[W/(m K)] <--> [btu/(h ft F)]
+    #
+    k_ctf_SI = k_ctf * tc_US_SI
+    return k_ctf_SI
+
+    
